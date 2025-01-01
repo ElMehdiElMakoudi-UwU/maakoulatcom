@@ -1,20 +1,20 @@
 {% extends 'products/base.html' %}
 
-{% block title %}Sales Entry{% endblock %}
+{% block title %}Sorties{% endblock %}
 
 {% block content %}
-<h2>Sales Entry</h2>
+<h2>Sorties</h2>
 <form method="post">
     {% csrf_token %}
     {{ form.as_p }}
-    <button type="submit" class="btn btn-primary">Add Sale</button>
+    <button type="submit" class="btn btn-primary">Ajouter Sortie</button>
 </form>
-<h3 class="mt-5">Recent Sales</h3>
+<h3 class="mt-5">Ventes recentes</h3>
 <table class="table table-bordered">
     <thead>
         <tr>
-            <th>Product</th>
-            <th>Quantity</th>
+            <th>Produit</th>
+            <th>Quantite</th>
             <th>Date</th>
         </tr>
     </thead>

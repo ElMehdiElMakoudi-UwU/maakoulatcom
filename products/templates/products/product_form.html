@@ -1,9 +1,9 @@
 {% extends 'products/base.html' %}
 
-{% block title %}Add New Product{% endblock %}
+{% block title %}ajouter nouveau produit{% endblock %}
 
 {% block content %}
-<h2 class="mb-4">Register New Product</h2>
+<h2 class="mb-4">Ajouter un nouveau produit</h2>
 <form method="post">
     {% csrf_token %}
     {{ form.as_p }}

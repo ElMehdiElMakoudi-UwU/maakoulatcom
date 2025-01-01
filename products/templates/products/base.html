@@ -17,7 +17,7 @@
             flex: 1;
         }
     </style>
-    <title>{% block title %}Store Manager{% endblock %}</title>
+    <title>{% block title %}Maakoulatcom Distribution{% endblock %}</title>
 </head>
 <body>
     <!-- Navbar -->
@@ -31,11 +31,11 @@
                 <ul class="navbar-nav">
                     <!-- Direct Products Button -->
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'products:product_list' %}">Products</a>
+                        <a class="nav-link" href="{% url 'products:product_list' %}">Produits</a>
                     </li>
                     <!-- Direct Inventory Button -->
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'products:inventory_status' %}">Inventory</a>
+                        <a class="nav-link" href="{% url 'products:inventory_status' %}">Inventaire</a>
                     </li>
                     <!-- Operations Dropdown -->
                     <li class="nav-item dropdown">
@@ -43,15 +43,15 @@
                             Operations
                         </a>
                         <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
-                            <li><a class="dropdown-item" href="{% url 'products:inventory_entry' %}">Entry</a></li>
-                            <li><a class="dropdown-item" href="{% url 'products:sales_entry' %}">Sales</a></li>
+                            <li><a class="dropdown-item" href="{% url 'products:inventory_entry' %}">Entree</a></li>
+                            <li><a class="dropdown-item" href="{% url 'products:sales_entry' %}">Ventes</a></li>
                         </ul>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'products:bulk_operations' %}">Operations en masse</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'products:reorder_page' %}">Reorder</a>
+                        <a class="nav-link" href="{% url 'products:reorder_page' %}">Commander</a>
                     </li>
                 </ul>
             </div>

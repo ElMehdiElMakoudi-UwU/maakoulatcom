@@ -1,33 +1,33 @@
 {% extends 'products/base.html' %}
 
-{% block title %}Product List{% endblock %}
+{% block title %}Liste de produits{% endblock %}
 
 {% block content %}
-<h2 class="mb-4">Product List</h2>
+<h2 class="mb-4">Liste de produits</h2>
 
 <!-- Filter Form -->
 <form method="get" class="mb-4">
     <div class="row">
         <div class="col-md-4">
-            <label for="category" class="form-label">Category</label>
+            <label for="category" class="form-label">Categorie</label>
             <select name="category" id="category" class="form-select">
-                <option value="">All Categories</option>
+                <option value="">Toutes les categories</option>
                 {% for cat in categories %}
                 <option value="{{ cat }}" {% if cat == selected_category %}selected{% endif %}>{{ cat }}</option>
                 {% endfor %}
             </select>
         </div>
         <div class="col-md-4">
-            <label for="supplier" class="form-label">Supplier</label>
+            <label for="supplier" class="form-label">Fournisseurs</label>
             <select name="supplier" id="supplier" class="form-select">
-                <option value="">All Suppliers</option>
+                <option value="">Toutes les fournisseurs</option>
                 {% for sup in suppliers %}
                 <option value="{{ sup }}" {% if sup == selected_supplier %}selected{% endif %}>{{ sup }}</option>
                 {% endfor %}
             </select>
         </div>
         <div class="col-md-4 align-self-end">
-            <button type="submit" class="btn btn-primary w-100">Apply Filters</button>
+            <button type="submit" class="btn btn-primary w-100">Appliquer les filtres</button>
         </div>
     </div>
 </form>
@@ -37,12 +37,12 @@
     <thead>
         <tr>
             <th>Code</th>
-            <th>Name</th>
-            <th>Category</th>
-            <th>Supplier</th>
-            <th>Purchase Price</th>
-            <th>Selling Price</th>
-            <th>Quantity</th>
+            <th>Designation</th>
+            <th>Categorie</th>
+            <th>Fournisseur</th>
+            <th>Prix d'achat</th>
+            <th>Prix de vente</th>
+            <th>Quantite</th>
             <th>Actions</th>
         </tr>
     </thead>
@@ -58,12 +58,12 @@
             <td>{{ product.quantity }}</td>
             <td>
                 <!-- Edit Button -->
-                <a href="{% url 'products:product_edit' product.id %}" class="btn btn-sm btn-warning">Edit</a>
+                <a href="{% url 'products:product_edit' product.id %}" class="btn btn-sm btn-warning">Modifier</a>
                 
                 <!-- Delete Button -->
                 <form method="post" action="{% url 'products:product_delete' product.id %}" style="display:inline;">
                     {% csrf_token %}
-                    <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                    <button type="submit" class="btn btn-sm btn-danger">Supprimer</button>
                 </form>
             </td>
         </tr>
@@ -72,5 +72,5 @@
 </table>
 
 <!-- Reset Filters Button -->
-<a href="{% url 'products:product_list' %}" class="btn btn-secondary mt-3">Reset Filters</a>
+<a href="{% url 'products:product_list' %}" class="btn btn-secondary mt-3">Reinitialiser les Filters</a>
 {% endblock %}

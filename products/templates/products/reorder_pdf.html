@@ -29,13 +29,13 @@
     </style>
 </head>
 <body>
-    <h2>Reorder List</h2>
+    <h2>Bon de Commande</h2>
     <table>
         <thead>
             <tr>
-                <th>Product</th>
-                <th>Purchase Price (MAD)</th>
-                <th>Quantity</th>
+                <th>Produit</th>
+                <th>Prix d'achat (MAD)</th>
+                <th>Quantite</th>
                 <th>Total (MAD)</th>
             </tr>
         </thead>
@@ -50,6 +50,6 @@
             {% endfor %}
         </tbody>
     </table>
-    <p class="grand-total">Grand Total: {{ grand_total|floatformat:2 }} MAD</p>
+    <p class="grand-total"> Total: {{ grand_total|floatformat:2 }} MAD</p>
 </body>
 </html>

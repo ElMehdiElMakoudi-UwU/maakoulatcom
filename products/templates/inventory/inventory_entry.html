@@ -1,21 +1,21 @@
 {% extends 'products/base.html' %}
 
-{% block title %}Inventory Entry{% endblock %}
+{% block title %}Inventaire{% endblock %}
 
 {% block content %}
-<h2>Inventory Entry</h2>
+<h2>Inventaire</h2>
 <form method="post">
     {% csrf_token %}
     {{ form.as_p }}
-    <button type="submit" class="btn btn-primary">Add Entry</button>
+    <button type="submit" class="btn btn-primary">Ajouter une entree</button>
 </form>
-<h3 class="mt-5">Recent Entries</h3>
+<h3 class="mt-5">Entree Recents</h3>
 <table class="table table-bordered">
     <thead>
         <tr>
-            <th>Product</th>
+            <th>Produit</th>
             <th>Type</th>
-            <th>Quantity</th>
+            <th>Qte</th>
             <th>Date</th>
         </tr>
     </thead>
