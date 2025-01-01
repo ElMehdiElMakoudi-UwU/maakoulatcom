@@ -1,0 +1,14 @@
+{% extends 'products/base.html' %}
+
+{% block title %}Order Details{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1>Order Details</h1>
+    <p><strong>Order Number:</strong> {{ order.order_number }}</p>
+    <p><strong>Supplier:</strong> {{ order.supplier }}</p>
+    <p><strong>Date:</strong> {{ order.created_at|date:"Y-m-d H:i" }}</p>
+    <p><strong>Total Amount:</strong> {{ order.total_amount }}</p>
+    <p><strong>Status:</strong> {{ order.status }}</p>
+</div>
+{% endblock %}

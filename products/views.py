@@ -172,41 +172,136 @@ from xhtml2pdf import pisa
 from .models import Product
 
 
+import uuid
+from django.shortcuts import render
+from .models import Order, Product
+from django.http import HttpResponse
+from xhtml2pdf import pisa
+from io import BytesIO
+
+from collections import defaultdict
+from django.shortcuts import render
+from .models import Product
+import uuid
+from .models import Order
+
+from django.shortcuts import render
+from .models import Product
+import uuid
+from .models import Order
+
+from django.utils.timezone import now
+from django.db.models import Max
+
+def generate_order_number():
+    current_year = now().year % 100  # Get the last two digits of the current year, e.g., 2025 -> 25
+
+    # Get the last order number for the current year
+    last_order = Order.objects.filter(order_number__endswith=f"/{current_year}").aggregate(
+        max_number=Max("order_number")
+    )
+    last_number = last_order["max_number"]
+
+    if last_number:
+        # Extract the XXXX part and increment it
+        last_number_int = int(last_number.split("/")[0][2:])  # Extract XXXX from BCXXXX/YY
+        next_number = last_number_int + 1
+    else:
+        # No orders for the current year, start from 0001
+        next_number = 1
+
+    # Format the order number as BCXXXX/YY
+    return f"BC{next_number:04d}/{current_year}"
+
 def reorder_page(request):
     if request.method == 'POST':
-        quantities = {int(k.split('_')[1]): int(v) for k, v in request.POST.items() if k.startswith('quantity_') and v}
+        # Get supplier and order data from the request
+        supplier = request.POST.get('supplier', 'Unknown Supplier')
+        products = Product.objects.all()  # Retrieve all products
 
-        # Prepare products to reorder and calculate totals
-        products_to_reorder = []
-        grand_total = 0
-        for product_id, quantity in quantities.items():
-            product = Product.objects.get(id=product_id)
-            total = product.purchase_price * quantity
-            grand_total += total
-            products_to_reorder.append({
+        # Generate a unique order number
+        order_number = generate_order_number()  # Reuse the generate_order_number function
+
+        # Prepare products with non-zero quantities
+        selected_products = [
+            {
                 'name': product.name,
                 'purchase_price': product.purchase_price,
-                'quantity': quantity,
-                'total': total
-            })
+                'quantity': int(request.POST.get(f'quantity_{product.id}', '0') or '0'),
+                'total': float(product.purchase_price) * int(request.POST.get(f'quantity_{product.id}', '0') or '0'),
+            }
+            for product in products
+            if int(request.POST.get(f'quantity_{product.id}', '0') or '0') > 0
+        ]
 
-        # Render PDF
-        pdf_content = render_to_string('products/reorder_pdf.html', {
-            'products': products_to_reorder,
-            'grand_total': grand_total,
-        })
-        response = HttpResponse(content_type='application/pdf')
-        response['Content-Disposition'] = 'attachment; filename="reorder_list.pdf"'
+        # Calculate total amount
+        total_amount = sum(product['total'] for product in selected_products)
 
-        # Generate PDF
-        pisa_status = pisa.CreatePDF(pdf_content, dest=response)
-        if pisa_status.err:
-            return HttpResponse('We had some errors with the PDF generation.', status=500)
+        # Save the order to the database
+        order = Order.objects.create(
+            order_number=order_number,
+            supplier=supplier,
+            total_amount=total_amount,
+        )
+
+        # Generate PDF for the order
+        context = {
+            'order': order,
+            'products': selected_products,
+            'total_amount': total_amount,
+        }
+
+        response = generate_pdf('products/reorder_pdf.html', context)
 
         return response
 
-    # Pass products grouped by category for display
-    categories = Product.objects.values_list('category', flat=True).distinct()
-    products_by_category = {category: Product.objects.filter(category=category) for category in categories}
+    return render(request, 'products/reorder_page.html', {'products': Product.objects.all()})
 
-    return render(request, 'products/reorder_page.html', {'products_by_category': products_by_category})
+
+
+def generate_pdf(template_path, context):
+    template = render_to_string(template_path, context)
+    pdf_file = BytesIO()
+    pisa.CreatePDF(BytesIO(template.encode('UTF-8')), pdf_file)
+    pdf_file.seek(0)
+    return HttpResponse(pdf_file, content_type='application/pdf')
+
+from django.shortcuts import render
+from .models import Order
+
+from django.db.models import Q
+
+def order_list(request):
+    query = request.GET.get('search', '')  # Get the search query from the request
+    if query:
+        orders = Order.objects.filter(Q(order_number__icontains=query))
+    else:
+        orders = Order.objects.all().order_by('-created_at')
+
+    return render(request, 'products/order_list.html', {'orders': orders, 'search_query': query})
+
+from django.shortcuts import get_object_or_404
+
+def order_details(request, order_id):
+    order = get_object_or_404(Order, id=order_id)
+    return render(request, 'products/order_details.html', {'order': order})
+
+def order_edit(request, order_id):
+    order = get_object_or_404(Order, id=order_id)
+
+    if request.method == 'POST':
+        order.supplier = request.POST.get('supplier', order.supplier)
+        order.status = request.POST.get('status', order.status)
+        order.save()
+        return redirect('products:order_list')
+
+    return render(request, 'products/order_edit.html', {'order': order})
+
+def order_delete(request, order_id):
+    order = get_object_or_404(Order, id=order_id)
+
+    if request.method == 'POST':
+        order.delete()
+        return redirect('products:order_list')
+
+    return render(request, 'products/order_confirm_delete.html', {'order': order})
