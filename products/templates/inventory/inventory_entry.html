@@ -1,0 +1,33 @@
+{% extends 'products/base.html' %}
+
+{% block title %}Inventory Entry{% endblock %}
+
+{% block content %}
+<h2>Inventory Entry</h2>
+<form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit" class="btn btn-primary">Add Entry</button>
+</form>
+<h3 class="mt-5">Recent Entries</h3>
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>Product</th>
+            <th>Type</th>
+            <th>Quantity</th>
+            <th>Date</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for entry in entries %}
+        <tr>
+            <td>{{ entry.product.name }}</td>
+            <td>{{ entry.entry_type }}</td>
+            <td>{{ entry.quantity }}</td>
+            <td>{{ entry.date }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

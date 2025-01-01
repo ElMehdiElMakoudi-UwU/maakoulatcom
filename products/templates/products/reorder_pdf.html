@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .total-row {
+            font-weight: bold;
+        }
+        .grand-total {
+            text-align: right;
+            font-size: 18px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h2>Reorder List</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Product</th>
+                <th>Purchase Price (MAD)</th>
+                <th>Quantity</th>
+                <th>Total (MAD)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for product in products %}
+            <tr>
+                <td>{{ product.name }}</td>
+                <td>{{ product.purchase_price|floatformat:2 }} MAD</td>
+                <td>{{ product.quantity }}</td>
+                <td>{{ product.total|floatformat:2 }} MAD</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <p class="grand-total">Grand Total: {{ grand_total|floatformat:2 }} MAD</p>
+</body>
+</html>

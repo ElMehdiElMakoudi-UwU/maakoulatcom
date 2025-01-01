@@ -1,0 +1,76 @@
+{% extends 'products/base.html' %}
+
+{% block title %}Product List{% endblock %}
+
+{% block content %}
+<h2 class="mb-4">Product List</h2>
+
+<!-- Filter Form -->
+<form method="get" class="mb-4">
+    <div class="row">
+        <div class="col-md-4">
+            <label for="category" class="form-label">Category</label>
+            <select name="category" id="category" class="form-select">
+                <option value="">All Categories</option>
+                {% for cat in categories %}
+                <option value="{{ cat }}" {% if cat == selected_category %}selected{% endif %}>{{ cat }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-4">
+            <label for="supplier" class="form-label">Supplier</label>
+            <select name="supplier" id="supplier" class="form-select">
+                <option value="">All Suppliers</option>
+                {% for sup in suppliers %}
+                <option value="{{ sup }}" {% if sup == selected_supplier %}selected{% endif %}>{{ sup }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-4 align-self-end">
+            <button type="submit" class="btn btn-primary w-100">Apply Filters</button>
+        </div>
+    </div>
+</form>
+
+<!-- Product Table -->
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>Code</th>
+            <th>Name</th>
+            <th>Category</th>
+            <th>Supplier</th>
+            <th>Purchase Price</th>
+            <th>Selling Price</th>
+            <th>Quantity</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for product in products %}
+        <tr>
+            <td>{{ product.code }}</td>
+            <td>{{ product.name }}</td>
+            <td>{{ product.category }}</td>
+            <td>{{ product.supplier }}</td>
+            <td>{{ product.purchase_price }}</td>
+            <td>{{ product.selling_price }}</td>
+            <td>{{ product.quantity }}</td>
+            <td>
+                <!-- Edit Button -->
+                <a href="{% url 'products:product_edit' product.id %}" class="btn btn-sm btn-warning">Edit</a>
+                
+                <!-- Delete Button -->
+                <form method="post" action="{% url 'products:product_delete' product.id %}" style="display:inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<!-- Reset Filters Button -->
+<a href="{% url 'products:product_list' %}" class="btn btn-secondary mt-3">Reset Filters</a>
+{% endblock %}

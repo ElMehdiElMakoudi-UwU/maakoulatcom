@@ -1,0 +1,60 @@
+{% extends 'products/base.html' %}
+
+{% block title %}Bulk Operations{% endblock %}
+
+{% block content %}
+<h2>Bulk Operations</h2>
+
+<!-- Messages -->
+{% if messages %}
+<div class="alert alert-success" role="alert">
+    {% for message in messages %}
+        {{ message }}
+    {% endfor %}
+</div>
+{% endif %}
+
+<!-- Operation Selector -->
+<form method="post">
+    {% csrf_token %}
+    <div class="mb-4">
+        <label for="operation" class="form-label">Selectionner l'operation</label>
+        <select name="operation" id="operation" class="form-select" required>
+            <option value="entry">Entree</option>
+            <option value="sales">Sortie</option>
+        </select>
+    </div>
+
+    <!-- Product Table -->
+    <div class="table-responsive">
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>Produit</th>
+                    <th>Qte</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for category, products in products_by_category.items %}
+                <tr class="table-secondary">
+                    <td colspan="2"><strong>{{ category }}</strong></td>
+                </tr>
+                {% for product in products %}
+                <tr>
+                    <td>{{ product.name }}</td>
+                    <td>
+                        <input type="number" name="quantity_{{ product.id }}" class="form-control" min="0">
+                    </td>
+                </tr>
+                {% endfor %}
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Validate Button -->
+    <div class="mt-3">
+        <button type="submit" class="btn btn-primary">Valider</button>
+    </div>
+</form>
+{% endblock %}

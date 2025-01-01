@@ -1,0 +1,12 @@
+{% extends 'products/base.html' %}
+
+{% block title %}Add New Product{% endblock %}
+
+{% block content %}
+<h2 class="mb-4">Register New Product</h2>
+<form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit" class="btn btn-primary">Save</button>
+</form>
+{% endblock %}
