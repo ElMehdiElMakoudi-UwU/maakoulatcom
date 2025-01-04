@@ -52,3 +52,14 @@ class SalesEntry(models.Model):
 
     def __str__(self):
         return f"Sold - {self.product.name}"
+
+
+class Order(models.Model):
+    order_number = models.CharField(max_length=20, unique=True)
+    supplier = models.CharField(max_length=100)
+    created_at = models.DateTimeField(auto_now_add=True)
+    total_amount = models.DecimalField(max_digits=10, decimal_places=2)
+    status = models.CharField(max_length=50, default="Pending")  # e.g., Pending, Completed
+
+    def __str__(self):
+        return f"Order #{self.order_number} - {self.supplier}"

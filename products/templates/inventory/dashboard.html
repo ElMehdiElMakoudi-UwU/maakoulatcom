@@ -42,6 +42,13 @@
         </div>
     </div>
 
+    <div class="mt-4">
+        <h3>Actions Rapides</h3>
+        <a href="{% url 'products:product_form' %}" class="btn btn-primary">Ajouter nouveau Produit</a>
+        <a href="{% url 'products:inventory_entry' %}" class="btn btn-success">Ajouter une nouvelle Entree</a>
+        <a href="{% url 'products:sales_entry' %}" class="btn btn-warning">Ajouter une nouvelle sortie</a>
+    </div>
+
     <!-- Recent Activities Section -->
     <div class="row mt-4">
         <div class="col-md-6">
@@ -91,11 +98,6 @@
     </div>
 
     <!-- Quick Actions Section -->
-    <div class="mt-4">
-        <h3>Actions Rapides</h3>
-        <a href="{% url 'products:product_form' %}" class="btn btn-primary">Ajouter nouveau Produit</a>
-        <a href="{% url 'products:inventory_entry' %}" class="btn btn-success">Ajouter une nouvelle Entree</a>
-        <a href="{% url 'products:sales_entry' %}" class="btn btn-warning">Ajouter une nouvelle sortie</a>
-    </div>
+
 </div>
 {% endblock %}

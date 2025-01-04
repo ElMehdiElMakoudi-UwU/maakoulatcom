@@ -1,55 +1,34 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 20px;
-        }
-        th, td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            text-align: left;
-        }
-        th {
-            background-color: #f2f2f2;
-        }
-        .total-row {
-            font-weight: bold;
-        }
-        .grand-total {
-            text-align: right;
-            font-size: 18px;
-            font-weight: bold;
-        }
-    </style>
+    <title>Order #{{ order.order_number }}</title>
 </head>
 <body>
-    <h2>Bon de Commande</h2>
+    <h1>Order #{{ order.order_number }}</h1>
+    <p>Supplier: {{ order.supplier }}</p>
+    <p>Date: {{ order.created_at }}</p>
+    <hr>
     <table>
         <thead>
             <tr>
-                <th>Produit</th>
-                <th>Prix d'achat (MAD)</th>
-                <th>Quantite</th>
-                <th>Total (MAD)</th>
+                <th>Product</th>
+                <th>Purchase Price</th>
+                <th>Quantity</th>
+                <th>Total</th>
             </tr>
         </thead>
         <tbody>
             {% for product in products %}
             <tr>
                 <td>{{ product.name }}</td>
-                <td>{{ product.purchase_price|floatformat:2 }} MAD</td>
+                <td>{{ product.purchase_price }}</td>
                 <td>{{ product.quantity }}</td>
-                <td>{{ product.total|floatformat:2 }} MAD</td>
+                <td>{{ product.total }}</td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
-    <p class="grand-total"> Total: {{ grand_total|floatformat:2 }} MAD</p>
+    <hr>
+    <p>Total Amount: {{ total_amount }}</p>
 </body>
 </html>

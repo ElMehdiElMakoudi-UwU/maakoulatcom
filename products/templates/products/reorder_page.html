@@ -18,10 +18,6 @@
                 </tr>
             </thead>
             <tbody>
-                {% for category, products in products_by_category.items %}
-                <tr class="table-secondary">
-                    <td colspan="4"><strong>{{ category }}</strong></td>
-                </tr>
                 {% for product in products %}
                 <tr>
                     <td>{{ product.name }}</td>
@@ -31,7 +27,6 @@
                         <input type="number" name="quantity_{{ product.id }}" class="form-control" min="0">
                     </td>
                 </tr>
-                {% endfor %}
                 {% endfor %}
             </tbody>
         </table>
