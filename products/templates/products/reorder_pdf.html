@@ -1,19 +1,19 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Order #{{ order.order_number }}</title>
+    <title>Bon de Commande N #{{ order.order_number }}</title>
 </head>
 <body>
-    <h1>Order #{{ order.order_number }}</h1>
-    <p>Supplier: {{ order.supplier }}</p>
+    <h1>Bon de commande #{{ order.order_number }}</h1>
+    <p>Fournisseur: {{ order.supplier }}</p>
     <p>Date: {{ order.created_at }}</p>
     <hr>
     <table>
         <thead>
             <tr>
-                <th>Product</th>
-                <th>Purchase Price</th>
-                <th>Quantity</th>
+                <th>Produit</th>
+                <th>Prix d'achat</th>
+                <th>Qte</th>
                 <th>Total</th>
             </tr>
         </thead>
@@ -29,6 +29,6 @@
         </tbody>
     </table>
     <hr>
-    <p>Total Amount: {{ total_amount }}</p>
+    <p>Total : {{ total_amount }}  MAD</p>
 </body>
 </html>
