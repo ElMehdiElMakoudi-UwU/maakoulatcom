@@ -20,4 +20,5 @@ urlpatterns = [
     path('orders/<int:order_id>/', views.order_details, name='order_details'),
     path('orders/<int:order_id>/edit/', views.order_edit, name='order_edit'),
     path('orders/<int:order_id>/delete/', views.order_delete, name='order_delete'),
+    path('import/', views.import_products_from_csv, name='import_products'),
 ]

@@ -1,0 +1,26 @@
+{% extends 'products/base.html' %}
+
+{% block title %}Import Products{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2>Import Products from CSV</h2>
+
+    {% if messages %}
+    <ul class="list-group">
+        {% for message in messages %}
+        <li class="list-group-item list-group-item-{{ message.tags }}">{{ message }}</li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+
+    <form method="post" enctype="multipart/form-data" class="mt-4">
+        {% csrf_token %}
+        <div class="mb-3">
+            <label for="csv_file" class="form-label">CSV File</label>
+            <input type="file" name="csv_file" id="csv_file" class="form-control" required>
+        </div>
+        <button type="submit" class="btn btn-primary">Import</button>
+    </form>
+</div>
+{% endblock %}

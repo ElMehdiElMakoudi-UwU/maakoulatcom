@@ -1,26 +1,15 @@
-from django.shortcuts import render, redirect
-from .models import Product
-from .forms import ProductForm
-from django.shortcuts import render, redirect
-from .models import Product, InventoryEntry, SalesEntry
-from .forms import InventoryEntryForm, SalesEntryForm
-from django.db.models import Sum
-from django.shortcuts import render
-from .models import Product, InventoryEntry, SalesEntry
-from django.db.models import Sum
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
+from .models import Product, InventoryEntry, SalesEntry, Order
+from .forms import ProductForm, InventoryEntryForm, SalesEntryForm
+from django.db.models import Sum, Max, Q
 from django.db import transaction
-from .models import Product, InventoryEntry, SalesEntry
-from django.shortcuts import render, get_object_or_404, redirect
-from .models import Product
-from .forms import ProductForm
 from django.contrib import messages
-from django.shortcuts import render
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from xhtml2pdf import pisa
-from .models import Product
-
+from django.utils.timezone import now
+import uuid
+from io import BytesIO
 
 def product_form(request):
     if request.method == 'POST':
@@ -55,7 +44,6 @@ def product_list(request):
         'selected_category': category,
         'selected_supplier': supplier,
     })
-
 
 # Edit Product
 def product_edit(request, product_id):
@@ -163,36 +151,6 @@ def bulk_operations(request):
         'products_by_category': products_by_category
     })
 
-
-
-from django.shortcuts import render
-from django.http import HttpResponse
-from django.template.loader import render_to_string
-from xhtml2pdf import pisa
-from .models import Product
-
-
-import uuid
-from django.shortcuts import render
-from .models import Order, Product
-from django.http import HttpResponse
-from xhtml2pdf import pisa
-from io import BytesIO
-
-from collections import defaultdict
-from django.shortcuts import render
-from .models import Product
-import uuid
-from .models import Order
-
-from django.shortcuts import render
-from .models import Product
-import uuid
-from .models import Order
-
-from django.utils.timezone import now
-from django.db.models import Max
-
 def generate_order_number():
     current_year = now().year % 100  # Get the last two digits of the current year, e.g., 2025 -> 25
 
@@ -257,8 +215,6 @@ def reorder_page(request):
 
     return render(request, 'products/reorder_page.html', {'products': Product.objects.all()})
 
-
-
 def generate_pdf(template_path, context):
     template = render_to_string(template_path, context)
     pdf_file = BytesIO()
@@ -266,10 +222,6 @@ def generate_pdf(template_path, context):
     pdf_file.seek(0)
     return HttpResponse(pdf_file, content_type='application/pdf')
 
-from django.shortcuts import render
-from .models import Order
-
-from django.db.models import Q
 
 def order_list(request):
     query = request.GET.get('search', '')  # Get the search query from the request
@@ -279,8 +231,6 @@ def order_list(request):
         orders = Order.objects.all().order_by('-created_at')
 
     return render(request, 'products/order_list.html', {'orders': orders, 'search_query': query})
-
-from django.shortcuts import get_object_or_404
 
 def order_details(request, order_id):
     order = get_object_or_404(Order, id=order_id)
@@ -305,3 +255,48 @@ def order_delete(request, order_id):
         return redirect('products:order_list')
 
     return render(request, 'products/order_confirm_delete.html', {'order': order})
+
+import csv
+from django.db import IntegrityError
+from products.models import Product
+
+from django.shortcuts import render
+from django.http import HttpResponse
+from django.contrib import messages
+import csv
+from .models import Product
+
+def import_products_from_csv(request):
+    if request.method == 'POST' and request.FILES.get('csv_file'):
+        csv_file = request.FILES['csv_file']
+        
+        if not csv_file.name.endswith('.csv'):
+            messages.error(request, "The file uploaded is not a CSV file.")
+            return render(request, 'products/import_products.html')
+
+        try:
+            decoded_file = csv_file.read().decode('utf-8').splitlines()
+            reader = csv.DictReader(decoded_file)
+            # import pdb; pdb.set_trace()
+            for row in reader:
+                try:
+                    Product.objects.create(
+                        code=row['\ufeffcode'],
+                        name=row['name'],
+                        name_ar=row.get('name_ar', None),
+                        purchase_price=float(row['purchase_price']),
+                        selling_price=float(row['selling_price']),
+                        quantity=int(row['quantity']),
+                        category=row['category'],
+                        supplier=row['supplier']
+                    )
+                except Exception as e:
+                    messages.error(request, f"Error importing product {row.get('name', 'Unknown')}: {str(e)}")
+            messages.success(request, "Products imported successfully!")
+        except Exception as e:
+            messages.error(request, f"Error processing the file: {str(e)}")
+        
+        return render(request, 'products/import_products.html')
+    
+    # Render the upload page for GET requests
+    return render(request, 'products/import_products.html')

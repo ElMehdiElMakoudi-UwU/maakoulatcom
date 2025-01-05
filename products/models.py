@@ -19,6 +19,7 @@ class Product(models.Model):
 
     code = models.CharField(max_length=50, unique=True)
     name = models.CharField(max_length=100)
+    name_ar = models.CharField(max_length=100, null=True, blank=True)
     purchase_price = models.DecimalField(max_digits=10, decimal_places=2)
     selling_price = models.DecimalField(max_digits=10, decimal_places=2)
     quantity = models.IntegerField(default=0)
