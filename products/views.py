@@ -10,6 +10,17 @@ from xhtml2pdf import pisa
 from django.utils.timezone import now
 import uuid
 from io import BytesIO
+import csv
+from django.db import IntegrityError
+from products.models import Product
+
+from django.shortcuts import render
+from django.http import HttpResponse
+from django.contrib import messages
+import csv
+from .models import Product
+from django.db.models import Q
+
 
 def product_form(request):
     if request.method == 'POST':
@@ -45,7 +56,6 @@ def product_list(request):
         'selected_supplier': supplier,
     })
 
-# Edit Product
 def product_edit(request, product_id):
     product = get_object_or_404(Product, id=product_id)
     if request.method == 'POST':
@@ -57,14 +67,12 @@ def product_edit(request, product_id):
         form = ProductForm(instance=product)
     return render(request, 'products/product_edit.html', {'form': form, 'product': product})
 
-# Delete Product
 def product_delete(request, product_id):
     product = get_object_or_404(Product, id=product_id)
     if request.method == 'POST':
         product.delete()
         return redirect('products:product_list')
     return render(request, 'products/product_confirm_delete.html', {'product': product})
-
 
 def inventory_entry(request):
     if request.method == 'POST':
@@ -95,10 +103,91 @@ def sales_entry(request):
     sales = SalesEntry.objects.all().order_by('-date')
     return render(request, 'inventory/inventory_sales.html', {'form': form, 'sales': sales})
 
-# Inventory Status
+# Inventory Entries Management
+def inventory_entries(request):
+    entries = InventoryEntry.objects.all().order_by('-date')
+    return render(request, 'inventory/inventory_entries.html', {'entries': entries})
+
+
+def edit_inventory_entry(request, entry_id):
+    entry = get_object_or_404(InventoryEntry, id=entry_id)
+    if request.method == 'POST':
+        form = InventoryEntryForm(request.POST, instance=entry)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Inventory entry updated successfully!")
+            return redirect('inventory:inventory_entries')
+    else:
+        form = InventoryEntryForm(instance=entry)
+    return render(request, 'inventory/edit_inventory_entry.html', {'form': form, 'entry': entry})
+
+
+def delete_inventory_entry(request, entry_id):
+    entry = get_object_or_404(InventoryEntry, id=entry_id)
+    if request.method == 'POST':
+        entry.delete()
+        messages.success(request, "Inventory entry deleted successfully!")
+        return redirect('products:inventory_entries')
+    return render(request, 'inventory/delete_inventory_entry.html', {'entry': entry})
+
+
+# Sales Entries Management
+def sales_entries(request):
+    sales = SalesEntry.objects.all().order_by('-date')
+    return render(request, 'inventory/sales_entries.html', {'sales': sales})
+
+
+def edit_sales_entry(request, sale_id):
+    sale = get_object_or_404(SalesEntry, id=sale_id)
+    if request.method == 'POST':
+        form = SalesEntryForm(request.POST, instance=sale)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Sales entry updated successfully!")
+            return redirect('products:sales_entries')
+    else:
+        form = SalesEntryForm(instance=sale)
+    return render(request, 'inventory/edit_sales_entry.html', {'form': form, 'sale': sale})
+
+
+def delete_sales_entry(request, sale_id):
+    sale = get_object_or_404(SalesEntry, id=sale_id)
+    if request.method == 'POST':
+        sale.delete()
+        messages.success(request, "Sales entry deleted successfully!")
+        return redirect('inventory:sales_entries')
+    return render(request, 'inventory/delete_sales_entry.html', {'sale': sale})
+
+
 def inventory_status(request):
+    # Get filter parameters
+    category_filter = request.GET.get('category')
+    supplier_filter = request.GET.get('supplier')
+
+    # Filter products
     products = Product.objects.all()
-    return render(request, 'inventory/inventory_status.html', {'products': products})
+    if category_filter:
+        products = products.filter(category=category_filter)
+    if supplier_filter:
+        products = products.filter(supplier=supplier_filter)
+
+    # Group products by category
+    categories = Product.CATEGORY_CHOICES
+    products_by_category = {
+        category[0]: products.filter(category=category[0]) for category in categories
+    }
+
+    # Get distinct categories and suppliers for filters
+    distinct_categories = Product.objects.values_list('category', flat=True).distinct()
+    distinct_suppliers = Product.objects.values_list('supplier', flat=True).distinct()
+
+    return render(request, 'inventory/inventory_status.html', {
+        'products_by_category': products_by_category,
+        'distinct_categories': distinct_categories,
+        'distinct_suppliers': distinct_suppliers,
+        'selected_category': category_filter,
+        'selected_supplier': supplier_filter,
+    })
 
 def dashboard(request):
     total_products = Product.objects.count()
@@ -222,7 +311,6 @@ def generate_pdf(template_path, context):
     pdf_file.seek(0)
     return HttpResponse(pdf_file, content_type='application/pdf')
 
-
 def order_list(request):
     query = request.GET.get('search', '')  # Get the search query from the request
     if query:
@@ -255,16 +343,6 @@ def order_delete(request, order_id):
         return redirect('products:order_list')
 
     return render(request, 'products/order_confirm_delete.html', {'order': order})
-
-import csv
-from django.db import IntegrityError
-from products.models import Product
-
-from django.shortcuts import render
-from django.http import HttpResponse
-from django.contrib import messages
-import csv
-from .models import Product
 
 def import_products_from_csv(request):
     if request.method == 'POST' and request.FILES.get('csv_file'):
@@ -300,3 +378,37 @@ def import_products_from_csv(request):
     
     # Render the upload page for GET requests
     return render(request, 'products/import_products.html')
+
+from django.http import HttpResponse
+from django.template.loader import render_to_string
+from xhtml2pdf import pisa
+
+def export_inventory_to_pdf(request):
+    category = request.GET.get('category')
+    supplier = request.GET.get('supplier')
+
+    # Filter products based on selected category and supplier
+    products = Product.objects.all()
+    if category:
+        products = products.filter(category=category)
+    if supplier:
+        products = products.filter(supplier=supplier)
+
+    # Group products by category
+    categories = Product.objects.values_list('category', flat=True).distinct()
+    products_by_category = {cat: products.filter(category=cat) for cat in categories}
+
+    context = {
+        'products_by_category': products_by_category,
+    }
+
+    # Render PDF
+    template_path = 'inventory/inventory_pdf.html'
+    html = render_to_string(template_path, context)
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = 'inline; filename="inventory.pdf"'
+    pisa_status = pisa.CreatePDF(html, dest=response)
+
+    if pisa_status.err:
+        return HttpResponse('Error generating PDF', content_type='text/plain')
+    return response

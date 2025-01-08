@@ -1,76 +1,79 @@
-{% extends 'products/base.html' %}
+{% extends "products/base.html" %}
 
-{% block title %}Liste de produits{% endblock %}
+{% block title %}Product List{% endblock %}
 
 {% block content %}
-<h2 class="mb-4">Liste de produits</h2>
+<h2>Product List</h2>
 
-<!-- Filter Form -->
-<form method="get" class="mb-4">
-    <div class="row">
+<!-- Filters -->
+<form method="get" class="mb-3">
+    <div class="row g-3">
         <div class="col-md-4">
-            <label for="category" class="form-label">Categorie</label>
-            <select name="category" id="category" class="form-select">
-                <option value="">Toutes les categories</option>
-                {% for cat in categories %}
-                <option value="{{ cat }}" {% if cat == selected_category %}selected{% endif %}>{{ cat }}</option>
+            <select name="category" class="form-select">
+                <option value="">All Categories</option>
+                {% for category in categories %}
+                <option value="{{ category }}" {% if selected_category == category %}selected{% endif %}>
+                    {{ category }}
+                </option>
                 {% endfor %}
             </select>
         </div>
         <div class="col-md-4">
-            <label for="supplier" class="form-label">Fournisseurs</label>
-            <select name="supplier" id="supplier" class="form-select">
-                <option value="">Toutes les fournisseurs</option>
-                {% for sup in suppliers %}
-                <option value="{{ sup }}" {% if sup == selected_supplier %}selected{% endif %}>{{ sup }}</option>
+            <select name="supplier" class="form-select">
+                <option value="">All Suppliers</option>
+                {% for supplier in suppliers %}
+                <option value="{{ supplier }}" {% if selected_supplier == supplier %}selected{% endif %}>
+                    {{ supplier }}
+                </option>
                 {% endfor %}
             </select>
         </div>
-        <div class="col-md-4 align-self-end">
-            <button type="submit" class="btn btn-primary w-100">Appliquer les filtres</button>
+        <div class="col-md-4">
+            <button type="submit" class="btn btn-primary">Filter</button>
+            <a href="{% url 'products:product_list' %}" class="btn btn-secondary">Reset</a>
         </div>
     </div>
 </form>
 
-<!-- Product Table -->
-<table class="table table-bordered">
-    <thead>
-        <tr>
-            <th>Code</th>
-            <th>Designation</th>
-            <th>Categorie</th>
-            <th>Fournisseur</th>
-            <th>Prix d'achat</th>
-            <th>Prix de vente</th>
-            <th>Quantite</th>
-            <th>Actions</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for product in products %}
-        <tr>
-            <td>{{ product.code }}</td>
-            <td>{{ product.name }}</td>
-            <td>{{ product.category }}</td>
-            <td>{{ product.supplier }}</td>
-            <td>{{ product.purchase_price }}</td>
-            <td>{{ product.selling_price }}</td>
-            <td>{{ product.quantity }}</td>
-            <td>
-                <!-- Edit Button -->
-                <a href="{% url 'products:product_edit' product.id %}" class="btn btn-sm btn-warning">Modifier</a>
-                
-                <!-- Delete Button -->
-                <form method="post" action="{% url 'products:product_delete' product.id %}" style="display:inline;">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-sm btn-danger">Supprimer</button>
-                </form>
-            </td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
+<!-- New Product Button -->
+<div class="mb-3">
+    <a href="{% url 'products:product_form' %}" class="btn btn-success">Create New Product</a>
+</div>
 
-<!-- Reset Filters Button -->
-<a href="{% url 'products:product_list' %}" class="btn btn-secondary mt-3">Reinitialiser les Filters</a>
+<!-- Products Table -->
+<div class="table-responsive">
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>Code</th>
+                <th>Name</th>
+                <th>Category</th>
+                <th>Supplier</th>
+                <th>Quantity</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for product in products %}
+            <tr>
+                <td>{{ product.code }}</td>
+                <td>{{ product.name }}</td>
+                <td>{{ product.category }}</td>
+                <td>{{ product.supplier }}</td>
+                <td>{{ product.quantity }}</td>
+                <td>
+                    <a href="{% url 'products:product_edit' product.id %}" class="btn btn-sm btn-warning">Edit</a>
+                    <form method="post" action="{% url 'products:product_delete' product.id %}" style="display:inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% if products|length == 0 %}
+    <p>No products found.</p>
+    {% endif %}
+</div>
 {% endblock %}
