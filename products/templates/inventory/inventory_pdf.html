@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Inventaire</title>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid black; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        .category { font-weight: bold; margin-top: 20px; }
+        /* Adjust column widths */
+        .code-column { width: 20%; } /* Smaller width for the "Code" column */
+        .name-column { width: 50%; } /* Larger width for the "Name" column */
+        .quantity-column { width: 30%; } /* Moderate width for "Quantity" column */
+    </style>
+</head>
+<body>
+    <h1>Rapport d'inventaire</h1>
+    {% for category, products in products_by_category.items %}
+    <h2 class="category">{{ category }}</h2>
+    <table>
+        <thead>
+            <tr>
+                <th class="code-column">Code</th>
+                <th class="name-column">Designation</th>
+                <th class="quantity-column">Quantite</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for product in products %}
+            <tr>
+                <td class="code-column">{{ product.code }}</td>
+                <td class="name-column">{{ product.name }}</td>
+                <td class="quantity-column">{{ product.quantity }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endfor %}
+</body>
+</html>

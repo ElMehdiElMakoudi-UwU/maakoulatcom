@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -29,30 +29,38 @@
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav">
-                    <!-- Direct Products Button -->
+                    <!-- Produits -->
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'products:product_list' %}">Produits</a>
                     </li>
-                    <!-- Direct Inventory Button -->
+                    <!-- Inventaire -->
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'products:inventory_status' %}">Inventaire</a>
                     </li>
-                    <!-- Operations Dropdown -->
+                    <!-- Entrées & Ventes -->
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            Operations
+                            Gestion des Entrées & Ventes
                         </a>
                         <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
-                            <li><a class="dropdown-item" href="{% url 'products:inventory_entry' %}">Entree</a></li>
-                            <li><a class="dropdown-item" href="{% url 'products:sales_entry' %}">Ventes</a></li>
+                            <li><a class="dropdown-item" href="{% url 'products:inventory_entry' %}">Ajouter une Entrée</a></li>
+                            <li><a class="dropdown-item" href="{% url 'products:sales_entry' %}">Ajouter une Vente</a></li>
+                            <li><a class="dropdown-item" href="{% url 'products:inventory_entries' %}">Gérer les Entrées</a></li>
+                            <li><a class="dropdown-item" href="{% url 'products:sales_entries' %}">Gérer les Ventes</a></li>
                         </ul>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'products:bulk_operations' %}">Operations en masse</a>
-                    </li>
+                    <!-- Commandes -->
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'products:order_list' %}">Commandes</a>
                     </li>
+                    <!-- Importer Produits -->
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'products:import_products' %}">Importer Produits</a>
+                    </li>
+                    <!-- Exporter Inventaire -->
+                    <!-- <li class="nav-item">
+                        <a class="nav-link" href="{% url 'products:export_inventory_to_pdf' %}">Exporter Inventaire (PDF)</a>
+                    </li> -->
                 </ul>
             </div>
         </div>

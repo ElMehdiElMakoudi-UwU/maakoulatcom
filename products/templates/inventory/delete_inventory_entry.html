@@ -1,0 +1,22 @@
+{% extends 'products/base.html' %}
+
+{% block title %}Supprimer une entree{% endblock %}
+
+{% block content %}
+<h2>Suppression d'entree</h2>
+
+<p>Etes-vous sure de supprimer cette entree?</p>
+
+<ul>
+    <li><strong>Produit:</strong> {{ entry.product.name }}</li>
+    <li><strong>Type d'entree:</strong> {{ entry.entry_type }}</li>
+    <li><strong>Qte:</strong> {{ entry.quantity }}</li>
+    <li><strong>Date:</strong> {{ entry.date|date:"Y-m-d" }}</li>
+</ul>
+
+<form method="post">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-danger">Supprimer</button>
+    <a href="{% url 'products:inventory_entries' %}" class="btn btn-secondary">Annuler</a>
+</form>
+{% endblock %}

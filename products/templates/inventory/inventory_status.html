@@ -1,23 +1,73 @@
-{% extends 'products/base.html' %}
+{% extends "products/base.html" %}
 
-{% block title %}Statut d'inventaire{% endblock %}
+{% block title %}Inventaire{% endblock %}
 
 {% block content %}
-<h2>Status d'inventaire</h2>
-<table class="table table-bordered">
-    <thead>
-        <tr>
-            <th>Produit</th>
-            <th>Qte</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for product in products %}
-        <tr>
-            <td>{{ product.name }}</td>
-            <td>{{ product.quantity }}</td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
+<h2>Etat d'inventaire</h2>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Inventaire</h2>
+    <a href="{% url 'products:export_inventory_to_pdf' %}" class="btn btn-secondary">Generer un PDF</a>
+</div>
+
+
+<!-- Filters -->
+<form method="get" class="mb-3">
+    <div class="row g-3">
+        <div class="col-md-4">
+            <select name="category" class="form-select">
+                <option value="">Toutes les categories</option>
+                {% for category in distinct_categories %}
+                <option value="{{ category }}" {% if selected_category == category %}selected{% endif %}>
+                    {{ category }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-4">
+            <select name="supplier" class="form-select">
+                <option value="">Tous les fournisseurs</option>
+                {% for supplier in distinct_suppliers %}
+                <option value="{{ supplier }}" {% if selected_supplier == supplier %}selected{% endif %}>
+                    {{ supplier }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-4">
+            <button type="submit" class="btn btn-primary">Filtrer</button>
+            <a href="{% url 'products:inventory_status' %}" class="btn btn-secondary">Reinitialiser</a>
+        </div>
+    </div>
+</form>
+
+<!-- Products Table -->
+<div class="table-responsive">
+    {% for category, products in products_by_category.items %}
+    <h3>{{ category }}</h3>
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>Produit</th>
+                <th>Categorie</th>
+                <th>Fournisseur</th>
+                <th>Qte</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for product in products %}
+            <tr>
+                <td>{{ product.name }}</td>
+                <td>{{ product.category }}</td>
+                <td>{{ product.supplier }}</td>
+                <td>{{ product.quantity }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% if products|length == 0 %}
+    <p>pas de produits dans cette categorie.</p>
+    {% endif %}
+    {% endfor %}
+</div>
 {% endblock %}

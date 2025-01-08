@@ -1,0 +1,32 @@
+{% extends 'products/base.html' %}
+
+{% block title %}Entree{% endblock %}
+
+{% block content %}
+<h2>Entree de l'inventaire</h2>
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>Produit</th>
+            <th>Type</th>
+            <th>Qte</th>
+            <th>Date</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for entry in entries %}
+        <tr>
+            <td>{{ entry.product.name }}</td>
+            <td>{{ entry.get_entry_type_display }}</td>
+            <td>{{ entry.quantity }}</td>
+            <td>{{ entry.date }}</td>
+            <td>
+                <a href="{% url 'products:edit_inventory_entry' entry.id %}" class="btn btn-warning btn-sm">Modifier</a>
+                <a href="{% url 'products:delete_inventory_entry' entry.id %}" class="btn btn-danger btn-sm">Supprimer</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}
