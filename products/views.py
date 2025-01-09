@@ -1,25 +1,16 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from .models import Product, InventoryEntry, SalesEntry, Order
-from .forms import ProductForm, InventoryEntryForm, SalesEntryForm
-from django.db.models import Sum, Max, Q
-from django.db import transaction
-from django.contrib import messages
 from django.http import HttpResponse
+from django.contrib import messages
+from django.db import transaction, IntegrityError
+from django.db.models import Sum, Max, Q
+from django.utils.timezone import now
 from django.template.loader import render_to_string
 from xhtml2pdf import pisa
-from django.utils.timezone import now
-import uuid
 from io import BytesIO
 import csv
-from django.db import IntegrityError
-from products.models import Product
-
-from django.shortcuts import render
-from django.http import HttpResponse
-from django.contrib import messages
-import csv
-from .models import Product
-from django.db.models import Q
+import uuid
+from .models import Product, InventoryEntry, SalesEntry, Order
+from .forms import ProductForm, InventoryEntryForm, SalesEntryForm
 
 
 def product_form(request):
@@ -103,11 +94,9 @@ def sales_entry(request):
     sales = SalesEntry.objects.all().order_by('-date')
     return render(request, 'inventory/inventory_sales.html', {'form': form, 'sales': sales})
 
-# Inventory Entries Management
 def inventory_entries(request):
     entries = InventoryEntry.objects.all().order_by('-date')
     return render(request, 'inventory/inventory_entries.html', {'entries': entries})
-
 
 def edit_inventory_entry(request, entry_id):
     entry = get_object_or_404(InventoryEntry, id=entry_id)
@@ -121,7 +110,6 @@ def edit_inventory_entry(request, entry_id):
         form = InventoryEntryForm(instance=entry)
     return render(request, 'inventory/edit_inventory_entry.html', {'form': form, 'entry': entry})
 
-
 def delete_inventory_entry(request, entry_id):
     entry = get_object_or_404(InventoryEntry, id=entry_id)
     if request.method == 'POST':
@@ -130,12 +118,9 @@ def delete_inventory_entry(request, entry_id):
         return redirect('products:inventory_entries')
     return render(request, 'inventory/delete_inventory_entry.html', {'entry': entry})
 
-
-# Sales Entries Management
 def sales_entries(request):
     sales = SalesEntry.objects.all().order_by('-date')
     return render(request, 'inventory/sales_entries.html', {'sales': sales})
-
 
 def edit_sales_entry(request, sale_id):
     sale = get_object_or_404(SalesEntry, id=sale_id)
@@ -149,7 +134,6 @@ def edit_sales_entry(request, sale_id):
         form = SalesEntryForm(instance=sale)
     return render(request, 'inventory/edit_sales_entry.html', {'form': form, 'sale': sale})
 
-
 def delete_sales_entry(request, sale_id):
     sale = get_object_or_404(SalesEntry, id=sale_id)
     if request.method == 'POST':
@@ -157,7 +141,6 @@ def delete_sales_entry(request, sale_id):
         messages.success(request, "Sales entry deleted successfully!")
         return redirect('inventory:sales_entries')
     return render(request, 'inventory/delete_sales_entry.html', {'sale': sale})
-
 
 def inventory_status(request):
     # Get filter parameters
@@ -192,7 +175,7 @@ def inventory_status(request):
 def dashboard(request):
     total_products = Product.objects.count()
     total_stock_value = Product.objects.aggregate(
-        total_value=Sum('quantity', field="quantity * purchase_price")
+        total_value=Sum('quantity', field="quantity * selling_price")
     )['total_value'] or 0
     total_sales_value = SalesEntry.objects.aggregate(
         total_sales=Sum('quantity', field="quantity * product__selling_price")
@@ -378,10 +361,6 @@ def import_products_from_csv(request):
     
     # Render the upload page for GET requests
     return render(request, 'products/import_products.html')
-
-from django.http import HttpResponse
-from django.template.loader import render_to_string
-from xhtml2pdf import pisa
 
 def export_inventory_to_pdf(request):
     category = request.GET.get('category')
