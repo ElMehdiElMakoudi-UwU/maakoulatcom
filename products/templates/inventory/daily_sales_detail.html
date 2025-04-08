@@ -1,0 +1,29 @@
+{% extends 'products/base.html' %}
+{% block content %}
+<h2>Détails des Ventes - {{ seller.name }} le {{ date }}</h2>
+
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>Produit</th>
+            <th>Voiture</th>
+            <th>Sortie</th>
+            <th>Retour</th>
+            <th>Vendu</th>
+            <th>Montant</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for entry in entries %}
+        <tr>
+            <td>{{ entry.product.name }}</td>
+            <td>{{ entry.voiture }}</td>
+            <td>{{ entry.sortie }}</td>
+            <td>{{ entry.retour }}</td>
+            <td>{{ entry.vendu }}</td>
+            <td>{{ entry.amount|floatformat:2 }} DH</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

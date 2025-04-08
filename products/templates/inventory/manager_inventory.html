@@ -1,0 +1,44 @@
+{% extends 'products/base.html' %}
+{% block content %}
+<h2>Suivi Chargement / Déchargement</h2>
+
+<form method="get" class="mb-3">
+    <label for="seller">Vendeur:</label>
+    <select name="seller" id="seller" class="form-select" onchange="this.form.submit()">
+        <option value="">-- Sélectionner --</option>
+        {% for seller in sellers %}
+            <option value="{{ seller.id }}" {% if selected_seller and seller.id == selected_seller.id %}selected{% endif %}>
+                {{ seller.name }}
+            </option>
+        {% endfor %}
+    </select>
+</form>
+
+{% if selected_seller %}
+<h4>Dates pour {{ selected_seller.name }}</h4>
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>Date</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for date in unique_dates %}
+            <tr>
+                <td>{{ date }}</td>
+                <td>
+                    <a href="{% url 'products:load_inventory' %}?seller={{ selected_seller.id }}&date={{ date }}" class="btn btn-sm btn-primary">Chargement</a>
+                    <a href="{% url 'products:unload_inventory' %}?seller={{ selected_seller.id }}&date={{ date }}" class="btn btn-sm btn-warning">Déchargement</a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="2">Aucune donnée disponible pour ce vendeur.</td>
+            </tr>
+        {% endfor %}
+
+    </tbody>
+</table>
+{% endif %}
+{% endblock %}

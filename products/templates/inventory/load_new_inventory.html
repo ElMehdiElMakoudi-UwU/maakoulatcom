@@ -1,0 +1,56 @@
+{% extends 'products/base.html' %}
+{% load custom_filters %}
+
+{% block content %}
+<h2>Chargement Journalier</h2>
+
+<form method="post">
+    {% csrf_token %}
+    <!-- Preserve selected seller/date in form submission -->
+    <input type="hidden" name="seller" value="{{ selected_seller_id }}">
+    <input type="hidden" name="date" value="{{ selected_date }}">
+
+    <div class="row mb-3">
+        <div class="col-md-4">
+            <label for="seller">Vendeur :</label>
+            <select name="seller_display" id="seller" class="form-select" onchange="window.location.href='?seller=' + this.value + '&date={{ selected_date }}'">
+                <option value="">-- Choisir --</option>
+                {% for s in sellers %}
+                    <option value="{{ s.id }}" {% if s.id|stringformat:"s" == selected_seller_id|stringformat:"s" %}>selected{% endif %}>{{ s.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-4">
+            <label for="date">Date :</label>
+            <input type="date" name="date_display" id="date" class="form-control" value="{{ selected_date }}" onchange="window.location.href='?seller={{ selected_seller_id }}&date=' + this.value">
+        </div>
+        <div class="col-md-4 align-self-end">
+            <button type="submit" class="btn btn-primary">Enregistrer le chargement</button>
+        </div>
+    </div>
+
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>Produit</th>
+                <th>Quantité dans Voiture (ancienne)</th>
+                <th>Quantité à Charger (sortie)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for product in products %}
+            <tr>
+                <td>{{ product.name }}</td>
+                <td>
+                    {{ voiture_quantities|get_item:product.id|default:0 }}
+                    <input type="hidden" name="voiture_{{ product.id }}" value="{{ voiture_quantities|get_item:product.id|default:0 }}">
+                </td>
+                <td>
+                    <input type="number" name="sortie_{{ product.id }}" min="0" class="form-control" value="0">
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</form>
+{% endblock %}

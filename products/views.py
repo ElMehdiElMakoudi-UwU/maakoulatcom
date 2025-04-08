@@ -19,6 +19,21 @@ from django.db import transaction
 from django.shortcuts import render, get_object_or_404, redirect
 from .models import Invoice, Product, InvoiceItem
 from .forms import InvoiceForm, InvoiceItemForm
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib import messages
+from .models import Seller, SellerInventory, UnloadingRecord, Product, SalesRecord
+
+from django.db.models import Sum
+from django.utils.timezone import now
+
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib import messages
+from django.utils.timezone import now
+from .models import Seller, SellerInventory, UnloadingRecord, SalesRecord, Product
+from django.db.models import Sum
+from django.utils.timezone import now
+from django.shortcuts import render
+from .models import SalesEntry
 
 def product_form(request):
     if request.method == 'POST':
@@ -517,18 +532,6 @@ def load_inventory(request):
     products = Product.objects.all()
     return render(request, 'inventory/load_inventory.html', {'sellers': sellers, 'products': products})
 
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib import messages
-from .models import Seller, SellerInventory, UnloadingRecord, Product, SalesRecord
-
-from django.db.models import Sum
-from django.utils.timezone import now
-
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib import messages
-from django.utils.timezone import now
-from .models import Seller, SellerInventory, UnloadingRecord, SalesRecord, Product
-
 def unload_inventory(request):
     seller_id = request.GET.get('seller') or request.POST.get('seller')  # Ensure we get seller from GET or POST
     seller_inventory = []
@@ -594,12 +597,6 @@ def unload_inventory(request):
         'selected_seller_id': seller_id  # Ensure seller remains selected
     })
 
-
-from django.db.models import Sum
-from django.utils.timezone import now
-from django.shortcuts import render
-from .models import SalesEntry
-
 def sales_report(request):
     selected_date = request.GET.get('date', now().date())
 
@@ -615,7 +612,6 @@ def sales_report(request):
         'selected_date': selected_date
     })
 
-
 def sale_details(request, sale_id):
     sale = get_object_or_404(SalesEntry, id=sale_id)
     total_amount = sale.quantity * sale.product.selling_price  # Calculate total
@@ -623,4 +619,267 @@ def sale_details(request, sale_id):
     return render(request, 'sales/sale_details.html', {
         'sale': sale,
         'total_amount': total_amount
+    })
+
+from django.shortcuts import render, get_object_or_404
+from .models import Seller, LoadingRecord, UnloadingRecord
+
+def manager_inventory(request):
+    seller_id = request.GET.get("seller")
+    selected_seller = None
+    unique_dates = []
+
+    if seller_id:
+        selected_seller = get_object_or_404(Seller, id=seller_id)
+
+        # Fetch dates directly without TruncDate()
+        load_dates = LoadingRecord.objects.filter(seller=selected_seller).values_list("date", flat=True).distinct()
+        unload_dates = UnloadingRecord.objects.filter(seller=selected_seller).values_list("date", flat=True).distinct()
+
+        # Merge and sort dates
+        unique_dates = sorted(set(load_dates).union(set(unload_dates)), reverse=True)
+
+    sellers = Seller.objects.all()
+    return render(request, "inventory/manager_inventory.html", {
+        "sellers": sellers,
+        "selected_seller": selected_seller,
+        "unique_dates": unique_dates,
+    })
+
+
+# views.py
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib import messages
+from django.utils.timezone import now
+from .models import Seller, Product, SellerProductDayEntry
+from datetime import timedelta
+from django.db.models import Q
+
+
+from datetime import datetime
+
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib import messages
+from django.utils.timezone import now
+from datetime import datetime, timedelta
+from .models import Seller, Product, SellerProductDayEntry
+
+
+def load_new_inventory(request):
+    sellers = Seller.objects.all()
+    products = Product.objects.all()
+    voiture_quantities = {}
+
+    selected_seller_id = request.GET.get('seller') or request.POST.get('seller')
+    selected_date_str = request.GET.get('date') or request.POST.get('date')
+    selected_date = datetime.strptime(selected_date_str, '%Y-%m-%d').date() if selected_date_str else now().date()
+
+    if selected_seller_id:
+        selected_seller = get_object_or_404(Seller, id=selected_seller_id)
+
+        # Load voiture quantities from yesterday
+        yesterday = selected_date - timedelta(days=1)
+        for product in products:
+            yesterday_entry = SellerProductDayEntry.objects.filter(
+                seller=selected_seller, product=product, date=yesterday
+            ).first()
+            voiture_quantities[product.id] = yesterday_entry.retour if yesterday_entry else 0
+
+        if request.method == 'POST':
+            for product in products:
+                sortie_qty = int(request.POST.get(f'sortie_{product.id}', 0))
+                voiture_qty = voiture_quantities.get(product.id, 0)
+
+                SellerProductDayEntry.objects.update_or_create(
+                    seller=selected_seller,
+                    product=product,
+                    date=selected_date,
+                    defaults={
+                        'voiture': voiture_qty,
+                        'sortie': sortie_qty,
+                        'retour': 0,
+                    }
+                )
+            messages.success(request, "Chargement du vendeur enregistré avec succès.")
+            return redirect(f"{request.path}?seller={selected_seller_id}&date={selected_date}")
+
+    return render(request, 'inventory/load_new_inventory.html', {
+        'sellers': sellers,
+        'products': products,
+        'voiture_quantities': voiture_quantities,
+        'selected_seller_id': selected_seller_id,
+        'selected_date': selected_date.strftime('%Y-%m-%d'),
+    })
+
+
+# views.py (continued)
+from django.utils.timezone import localdate
+from .models import Seller, Product, SellerInventory, UnloadingRecord, LoadingRecord
+
+
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib import messages
+from django.utils.timezone import localdate
+from datetime import timedelta
+from .models import Seller, Product, SellerProductDayEntry
+
+
+# views.py
+from django.utils.timezone import now
+
+def unload_new_inventory(request):
+    seller_id = request.GET.get("seller")
+    date_str = request.GET.get("date")
+    selected_date = datetime.strptime(date_str, "%Y-%m-%d").date() if date_str else now().date()
+
+    seller = None
+    voiture_quantities = {}
+    sortie_quantities = {}
+
+    if seller_id:
+        seller = get_object_or_404(Seller, id=seller_id)
+
+        # Fetch voiture = yesterday's retour
+        yesterday = selected_date - timedelta(days=1)
+        previous_unloads = SellerProductDayEntry.objects.filter(seller=seller, date=yesterday)
+        for entry in previous_unloads:
+            voiture_quantities[entry.product.id] = entry.retour
+
+        # Fetch sortie = today's sortie
+        today_loads = SellerProductDayEntry.objects.filter(seller=seller, date=selected_date)
+        for entry in today_loads:
+            sortie_quantities[entry.product.id] = entry.sortie
+
+        if request.method == "POST":
+            for product in Product.objects.all():
+                retour_qty = int(request.POST.get(f"retour_{product.id}", 0))
+
+                # Update SellerProductDayEntry for this day
+                entry, _ = SellerProductDayEntry.objects.get_or_create(
+                    seller=seller, product=product, date=selected_date
+                )
+                entry.retour = retour_qty
+                entry.save()
+
+            messages.success(request, "Déchargement enregistré avec succès.")
+            return redirect(f"{request.path}?seller={seller.id}&date={selected_date}")
+
+    return render(request, "inventory/unload_new_inventory.html", {
+        "sellers": Seller.objects.all(),
+        "selected_seller": seller,
+        "products": Product.objects.all(),
+        "selected_date": selected_date,
+        "voiture": voiture_quantities,
+        "sortie": sortie_quantities,
+    })
+
+# views.py
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib import messages
+from .models import DailySellerStockRecord, Seller, Product
+from django.utils.timezone import now
+from datetime import datetime
+
+def daily_seller_stock(request):
+    # Parse date (default today)
+    date_str = request.GET.get('date')
+    seller_id = request.GET.get('seller')
+    selected_date = datetime.strptime(date_str, '%Y-%m-%d').date() if date_str else now().date()
+
+    sellers = Seller.objects.all()
+    products = Product.objects.all()
+    selected_seller = Seller.objects.filter(id=seller_id).first() if seller_id else None
+    previous_date = selected_date - timedelta(days=1)
+
+    records = []
+    if request.method == 'POST' and selected_seller:
+        for product in products:
+            sortie = int(request.POST.get(f'sortie_{product.id}', 0))
+            retour = int(request.POST.get(f'retour_{product.id}', 0))
+
+            # Get voiture value from form if user modified it manually
+            voiture = int(request.POST.get(f'voiture_{product.id}', 0))
+
+            record, created = DailySellerStockRecord.objects.get_or_create(
+                seller=selected_seller,
+                product=product,
+                date=selected_date,
+                defaults={
+                    'voiture': voiture,
+                    'sortie': sortie,
+                    'retour': retour,
+                }
+            )
+            if not created:
+                record.voiture = voiture
+                record.sortie = sortie
+                record.retour = retour
+                record.save()
+
+        messages.success(request, "Stock du jour mis à jour avec succès.")
+        return redirect(f"?seller={selected_seller.id}&date={selected_date}")
+
+    if selected_seller:
+        for product in products:
+            # Get today's or create empty
+            record = DailySellerStockRecord.objects.filter(
+                seller=selected_seller, product=product, date=selected_date
+            ).first()
+
+            if not record:
+                voiture = DailySellerStockRecord.objects.filter(
+                    seller=selected_seller, product=product, date=previous_date
+                ).values_list('retour', flat=True).first() or 0
+                record = DailySellerStockRecord(
+                    seller=selected_seller, product=product, date=selected_date,
+                    voiture=voiture, sortie=0, retour=0
+                )
+            records.append(record)
+
+    return render(request, 'inventory/daily_seller_stock.html', {
+        'sellers': sellers,
+        'products': products,
+        'records': records,
+        'selected_seller': selected_seller,
+        'selected_date': selected_date
+    })
+
+from django.db.models import Sum
+from django.utils.timezone import now
+
+def daily_sales_summary(request):
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+
+    filters = {}
+    if start_date:
+        filters['date__gte'] = start_date
+    if end_date:
+        filters['date__lte'] = end_date
+
+    summary = (
+        SellerProductDayEntry.objects
+        .filter(**filters)
+        .values('date', 'seller__name', 'seller_id')
+        .annotate(
+            total_vendu=Sum('vendu'),
+            total_amount=Sum('amount')
+        )
+        .order_by('-date', 'seller__name')
+    )
+
+    return render(request, 'inventory/daily_sales_summary.html', {
+        'summary': summary,
+        'start_date': start_date,
+        'end_date': end_date
+    })
+
+def daily_sales_detail(request, seller_id, date):
+    seller = get_object_or_404(Seller, id=seller_id)
+    entries = SellerProductDayEntry.objects.filter(seller=seller, date=date).select_related('product')
+
+    return render(request, 'inventory/daily_sales_detail.html', {
+        'seller': seller,
+        'date': date,
+        'entries': entries,
     })

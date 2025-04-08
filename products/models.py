@@ -134,3 +134,68 @@ class SalesRecord(models.Model):
 
     def __str__(self):
         return f"{self.seller.name} sold {self.quantity_sold} {self.product.name} on {self.date}"
+
+
+from django.db import models
+from django.utils.timezone import now
+
+class SellerProductDayEntry(models.Model):
+    seller = models.ForeignKey('Seller', on_delete=models.CASCADE)
+    product = models.ForeignKey('Product', on_delete=models.CASCADE)
+    date = models.DateField(default=now)
+    
+    voiture = models.IntegerField(default=0)  # Remaining from yesterday
+    sortie = models.IntegerField(default=0)   # Taken from warehouse
+    retour = models.IntegerField(default=0)   # Returned to warehouse
+
+    vendu = models.IntegerField(default=0)    # Computed field: voiture + sortie - retour
+    amount = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)  # vendu * selling_price
+
+    class Meta:
+        unique_together = ('seller', 'product', 'date')
+
+    def save(self, *args, **kwargs):
+        self.vendu = self.voiture + self.sortie - self.retour
+        self.amount = self.vendu * self.product.selling_price
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.date} - {self.seller.name} - {self.product.name}"
+
+
+# products/models.py
+
+from django.db import models
+from django.utils.timezone import now
+
+class DailySellerStockRecord(models.Model):
+    seller = models.ForeignKey('Seller', on_delete=models.CASCADE)
+    product = models.ForeignKey('Product', on_delete=models.CASCADE)
+    date = models.DateField(default=now)
+
+    voiture = models.IntegerField(default=0)  # Quantité restante de la veille
+    sortie = models.IntegerField(default=0)   # Quantité chargée
+    retour = models.IntegerField(default=0)   # Quantité non vendue (retour)
+    vendu = models.IntegerField(default=0)    # vendu = voiture + sortie - retour
+
+    class Meta:
+        unique_together = ('seller', 'product', 'date')
+
+    def save(self, *args, **kwargs):
+        self.vendu = self.voiture + self.sortie - self.retour
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.date} | {self.seller.name} | {self.product.name} : vendu {self.vendu}"
+
+# products/forms.py
+from django import forms
+from .models import DailySellerStockRecord
+
+class DailySellerStockForm(forms.ModelForm):
+    class Meta:
+        model = DailySellerStockRecord
+        fields = ['seller', 'product', 'date', 'voiture', 'sortie', 'retour']
+        widgets = {
+            'date': forms.DateInput(attrs={'type': 'date'}),
+        }

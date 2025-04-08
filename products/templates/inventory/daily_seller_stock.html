@@ -1,0 +1,48 @@
+{% extends 'products/base.html' %}
+{% load static %}
+{% block content %}
+<div class="container">
+    <h2>Suivi Quotidien de Stock - {{ seller.name }}</h2>
+
+    <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="seller" value="{{ seller.id }}">
+        <input type="hidden" name="date" value="{{ date }}">
+
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>Produit</th>
+                    <th>Stock Voiture (Jour Préc.)</th>
+                    <th>Sortie (Aujourd'hui)</th>
+                    <th>Retour (Aujourd'hui)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for stock in stock_data %}
+                <tr>
+                    <td>{{ stock.product.name }}</td>
+                    <td>
+                        <input type="number" class="form-control" readonly
+                               name="voiture_{{ stock.product.id }}"
+                               value="{{ stock.prev_car_quantity }}">
+                    </td>
+                    <td>
+                        <input type="number" class="form-control"
+                               name="sortie_{{ stock.product.id }}"
+                               value="{{ stock.today_sortie }}">
+                    </td>
+                    <td>
+                        <input type="number" class="form-control"
+                               name="retour_{{ stock.product.id }}"
+                               value="{{ stock.today_retour }}">
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <button type="submit" class="btn btn-primary">Sauvegarder</button>
+    </form>
+</div>
+{% endblock %}
