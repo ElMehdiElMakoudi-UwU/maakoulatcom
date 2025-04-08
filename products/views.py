@@ -727,6 +727,13 @@ from .models import Seller, Product, SellerProductDayEntry
 # views.py
 from django.utils.timezone import now
 
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib import messages
+from django.utils.timezone import now
+from datetime import datetime, timedelta
+from .models import Seller, Product, SellerProductDayEntry
+
+
 def unload_new_inventory(request):
     seller_id = request.GET.get("seller")
     date_str = request.GET.get("date")
@@ -739,13 +746,11 @@ def unload_new_inventory(request):
     if seller_id:
         seller = get_object_or_404(Seller, id=seller_id)
 
-        # Fetch voiture = yesterday's retour
         yesterday = selected_date - timedelta(days=1)
         previous_unloads = SellerProductDayEntry.objects.filter(seller=seller, date=yesterday)
         for entry in previous_unloads:
             voiture_quantities[entry.product.id] = entry.retour
 
-        # Fetch sortie = today's sortie
         today_loads = SellerProductDayEntry.objects.filter(seller=seller, date=selected_date)
         for entry in today_loads:
             sortie_quantities[entry.product.id] = entry.sortie
@@ -754,12 +759,11 @@ def unload_new_inventory(request):
             for product in Product.objects.all():
                 retour_qty = int(request.POST.get(f"retour_{product.id}", 0))
 
-                # Update SellerProductDayEntry for this day
                 entry, _ = SellerProductDayEntry.objects.get_or_create(
                     seller=seller, product=product, date=selected_date
                 )
                 entry.retour = retour_qty
-                entry.save()
+                entry.save()  # Triggers .vendu & .amount calculation
 
             messages.success(request, "Déchargement enregistré avec succès.")
             return redirect(f"{request.path}?seller={seller.id}&date={selected_date}")
