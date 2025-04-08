@@ -1,0 +1,29 @@
+{% extends 'products/base.html' %}
+{% block content %}
+<h2>Détails de la vente</h2>
+
+<table class="table table-bordered">
+    <tr>
+        <th>Produit</th>
+        <td>{{ sale.product.name }}</td>
+    </tr>
+    <tr>
+        <th>Quantité vendue</th>
+        <td>{{ sale.quantity }}</td>
+    </tr>
+    <tr>
+        <th>Prix unitaire</th>
+        <td>{{ sale.product.selling_price }} MAD</td>
+    </tr>
+    <tr>
+        <th>Montant total</th>
+        <td>{{ total_amount }} MAD</td>
+    </tr>
+    <tr>
+        <th>Date</th>
+        <td>{{ sale.date }}</td>
+    </tr>
+</table>
+
+<a href="{% url 'products:sales_report' %}" class="btn btn-secondary">Retour</a>
+{% endblock %}

@@ -1,0 +1,38 @@
+{% extends 'products/base.html' %}
+
+{% block title %}Modifier la Facture{% endblock %}
+
+{% block content %}
+<h2>Modifier la Facture</h2>
+
+<form method="post">
+    {% csrf_token %}
+    {{ invoice_form.as_p }}
+
+    <h3>Produits</h3>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Produit</th>
+                <th>Prix Unitaire</th>
+                <th>Quantité</th>
+                <th>Prix Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in items %}
+            <tr>
+                <td>{{ item.product.name }}</td>
+                <td>{{ item.unit_price }}</td>
+                <td>
+                    <input type="number" name="quantity_{{ item.id }}" class="form-control" value="{{ item.quantity }}">
+                </td>
+                <td>{{ item.total_price }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <button type="submit" class="btn btn-primary mt-3">Enregistrer</button>
+</form>
+{% endblock %}

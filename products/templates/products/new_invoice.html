@@ -1,0 +1,78 @@
+{% extends 'products/base.html' %}
+
+{% block title %}New Invoice{% endblock %}
+
+{% block content %}
+<h2>Create New Invoice</h2>
+
+<form method="POST">
+    {% csrf_token %}
+    <div class="mb-3">
+        <label for="client" class="form-label">Client</label>
+        <input type="text" name="client" id="client" class="form-control" required>
+    </div>
+    <div class="mb-3">
+        <label for="date" class="form-label">Date</label>
+        <input type="date" name="date" id="date" class="form-control" required>
+    </div>
+    <div class="mb-3">
+        <label for="details" class="form-label">Invoice Details</label>
+        <textarea name="details" id="details" class="form-control"></textarea>
+    </div>
+
+    <h4>Products</h4>
+    {% for category, products in products_by_category.items %}
+    <h5>{{ category }}</h5>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Product</th>
+                <th>Unit Price</th>
+                <th>Quantity</th>
+                <th>Total Price</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for product in products %}
+            <tr>
+                <td>{{ product.name }}</td>
+                <td>{{ product.selling_price }}</td>
+                <td>
+                    <input type="number" name="quantity_{{ product.id }}" class="form-control" min="0">
+                </td>
+                <td>
+                    <span id="total_{{ product.id }}">0</span>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endfor %}
+
+    <div class="d-flex justify-content-end">
+        <h4>Total Amount: <span id="total_amount">0</span></h4>
+    </div>
+
+    <button type="submit" class="btn btn-primary mt-3">Save Invoice</button>
+</form>
+
+<script>
+    document.querySelectorAll('input[name^="quantity_"]').forEach(input => {
+        input.addEventListener('input', function() {
+            const productId = this.name.split('_')[1];
+            const unitPrice = parseFloat(this.closest('tr').querySelector('td:nth-child(2)').textContent);
+            const quantity = parseInt(this.value) || 0;
+            const totalPrice = unitPrice * quantity;
+
+            document.getElementById(`total_${productId}`).textContent = totalPrice.toFixed(2);
+
+            // Update total amount
+            let totalAmount = 0;
+            document.querySelectorAll('span[id^="total_"]').forEach(span => {
+                totalAmount += parseFloat(span.textContent) || 0;
+            });
+            document.getElementById('total_amount').textContent = totalAmount.toFixed(2);
+        });
+    });
+</script>
+{% endblock %}

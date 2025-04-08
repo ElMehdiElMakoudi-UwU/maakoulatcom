@@ -1,0 +1,36 @@
+{% extends 'products/base.html' %}
+
+{% block title %}Détails de la Facture{% endblock %}
+
+{% block content %}
+<h2>Détails de la Facture</h2>
+
+<p><strong>Client:</strong> {{ invoice.client }}</p>
+<p><strong>Date:</strong> {{ invoice.date }}</p>
+<p><strong>Détails:</strong> {{ invoice.details }}</p>
+<p><strong>Montant Total:</strong> {{ invoice.total_amount }}</p>
+
+<h3>Produits</h3>
+<table class="table">
+    <thead>
+        <tr>
+            <th>Produit</th>
+            <th>Prix Unitaire</th>
+            <th>Quantité</th>
+            <th>Prix Total</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for item in items %}
+        <tr>
+            <td>{{ item.product.name }}</td>
+            <td>{{ item.unit_price }}</td>
+            <td>{{ item.quantity }}</td>
+            <td>{{ item.total_price }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<a href="{% url 'products:invoice_list' %}" class="btn btn-secondary mt-3">Retour</a>
+{% endblock %}

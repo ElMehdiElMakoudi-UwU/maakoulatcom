@@ -1,0 +1,50 @@
+{% extends 'products/base.html' %}
+{% block content %}
+<h2>Décharger les produits</h2>
+
+<form method="post">
+    {% csrf_token %}
+    
+    <label for="seller">Vendeur:</label>
+    <select name="seller" id="seller" class="form-select" onchange="this.form.submit()">
+        <option value="">-- Sélectionner --</option>
+        {% for seller in sellers %}
+            <option value="{{ seller.id }}" {% if seller.id|stringformat:"s" == selected_seller_id|stringformat:"s" %}selected{% endif %}>
+                {{ seller.name }}
+            </option>
+        {% endfor %}
+    </select>
+
+    <h3>Produits</h3>
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>Produit</th>
+                <th>Quantité chargée</th>
+                <th>Quantité déchargée</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in seller_inventory %}
+            <tr>
+                <td>{{ item.product.name }}</td>
+                <td>{{ item.quantity }}</td>  <!-- Loaded quantity -->
+                <td>
+                    <input type="number" name="quantity_{{ item.product.id }}" min="0" max="{{ item.quantity }}" value="0" class="form-control">
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <button type="submit" class="btn btn-primary">Décharger</button>
+</form>
+
+<script>
+    document.getElementById("seller").addEventListener("change", function() {
+        let selectedSeller = this.value;
+        window.location.href = "?seller=" + selectedSeller;
+    });
+</script>
+
+{% endblock %}

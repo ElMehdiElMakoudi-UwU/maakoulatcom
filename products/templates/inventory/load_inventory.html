@@ -1,0 +1,39 @@
+{% extends 'products/base.html' %}
+{% block content %}
+<h2>Charger les produits</h2>
+
+<form method="post">
+    {% csrf_token %}
+    
+    <label for="seller">Vendeur:</label>
+    <select name="seller" class="form-control">
+        {% for seller in sellers %}
+        <option value="{{ seller.id }}">{{ seller.name }}</option>
+        {% endfor %}
+    </select>
+
+    <h3>Produits</h3>
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>Produit</th>
+                <th>Quantité disponible</th>
+                <th>Quantité à charger</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for product in products %}
+            <tr>
+                <td>{{ product.name }}</td>
+                <td>{{ product.quantity }}</td>  <!-- Available stock in warehouse -->
+                <td>
+                    <input type="number" name="quantity_{{ product.id }}" min="0" max="{{ product.quantity }}" value="0" class="form-control">
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    <button type="submit" class="btn btn-primary">Charger</button>
+</form>
+{% endblock %}

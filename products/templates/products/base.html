@@ -49,9 +49,30 @@
                             <li><a class="dropdown-item" href="{% url 'products:sales_entries' %}">Gérer les Ventes</a></li>
                         </ul>
                     </li>
+                    <!-- Entrées & Ventes -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            Operations
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+                            <li><a class="dropdown-item" href="{% url 'products:load_inventory' %}">
+                                Chargements
+                            </a></li>
+                            <li><a class="dropdown-item" href="{% url 'products:unload_inventory' %}">
+                                Dechargements
+                            </a></li>
+                            <li><a class="dropdown-item" href="{% url 'products:sales_report' %}">
+                                Ventes
+                            </a></li>
+                        </ul>
+                    </li>
                     <!-- Commandes -->
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'products:order_list' %}">Commandes</a>
+                    </li>
+                    <!-- Factures -->
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'products:invoice_list' %}">Factures</a>
                     </li>
                     <!-- Importer Produits -->
                     <li class="nav-item">

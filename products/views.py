@@ -11,7 +11,14 @@ import csv
 import uuid
 from .models import Product, InventoryEntry, SalesEntry, Order
 from .forms import ProductForm, InventoryEntryForm, SalesEntryForm
-
+from django.shortcuts import render, get_object_or_404, redirect
+from django.contrib import messages
+from .models import Invoice, InvoiceItem, Product, Seller, SellerInventory, LoadingRecord, UnloadingRecord
+from .forms import InvoiceForm, InvoiceItemForm
+from django.db import transaction
+from django.shortcuts import render, get_object_or_404, redirect
+from .models import Invoice, Product, InvoiceItem
+from .forms import InvoiceForm, InvoiceItemForm
 
 def product_form(request):
     if request.method == 'POST':
@@ -391,3 +398,229 @@ def export_inventory_to_pdf(request):
     if pisa_status.err:
         return HttpResponse('Error generating PDF', content_type='text/plain')
     return response
+
+def invoice_list(request):
+    invoices = Invoice.objects.all().order_by('-date')
+    return render(request, 'products/invoice_list.html', {'invoices': invoices})
+
+def new_invoice(request):
+    if request.method == 'POST':
+        client = request.POST.get('client')
+        date = request.POST.get('date')
+        details = request.POST.get('details')
+
+        # Create the invoice
+        invoice = Invoice.objects.create(client=client, date=date, details=details)
+
+        # Add items to the invoice
+        for product_id, quantity in request.POST.items():
+            if product_id.startswith('quantity_') and quantity:
+                product_id = int(product_id.split('_')[1])
+                product = Product.objects.get(id=product_id)
+                unit_price = product.selling_price
+                quantity = int(quantity)
+                InvoiceItem.objects.create(
+                    invoice=invoice,
+                    product=product,
+                    unit_price=unit_price,
+                    quantity=quantity,
+                )
+
+        # Update total amount
+        invoice.total_amount = sum(item.total_price for item in invoice.items.all())
+        invoice.save()
+
+        return redirect('products:invoice_list')
+
+    # Fetch products grouped by category
+    products = Product.objects.all()
+    categories = Product.CATEGORY_CHOICES
+    products_by_category = {cat[0]: products.filter(category=cat[0]) for cat in categories}
+
+    return render(request, 'products/new_invoice.html', {'products_by_category': products_by_category})
+
+def invoice_details(request, invoice_id):
+    invoice = get_object_or_404(Invoice, id=invoice_id)
+    items = InvoiceItem.objects.filter(invoice=invoice)
+
+    return render(request, 'products/invoice_details.html', {
+        'invoice': invoice,
+        'items': items
+    })
+
+def edit_invoice(request, invoice_id):
+    invoice = get_object_or_404(Invoice, id=invoice_id)
+
+    if request.method == 'POST':
+        invoice_form = InvoiceForm(request.POST, instance=invoice)
+
+        if invoice_form.is_valid():
+            invoice_form.save()
+
+            # Update invoice items
+            items = InvoiceItem.objects.filter(invoice=invoice)
+            for item in items:
+                item.quantity = int(request.POST.get(f'quantity_{item.id}', item.quantity))
+                item.save()
+
+            messages.success(request, "Invoice updated successfully!")
+            return redirect('products:invoice_list')
+
+    else:
+        invoice_form = InvoiceForm(instance=invoice)
+        items = InvoiceItem.objects.filter(invoice=invoice)
+
+    return render(request, 'products/edit_invoice.html', {
+        'invoice_form': invoice_form,
+        'invoice': invoice,
+        'items': items
+    })
+
+def delete_invoice(request, invoice_id):
+    invoice = get_object_or_404(Invoice, id=invoice_id)
+
+    if request.method == 'POST':
+        invoice.delete()
+        messages.success(request, "Invoice deleted successfully!")
+        return redirect('products:invoice_list')
+
+    return render(request, 'products/delete_invoice.html', {
+        'invoice': invoice
+    })
+
+def load_inventory(request):
+    if request.method == 'POST':
+        seller_id = request.POST.get('seller')
+        seller = get_object_or_404(Seller, id=seller_id)
+        
+        for product in Product.objects.all():
+            quantity = int(request.POST.get(f'quantity_{product.id}', 0))
+            if quantity > 0:
+                # Update warehouse inventory
+                product.quantity -= quantity
+                product.save()
+                
+                # Add to seller's inventory
+                seller_inventory, created = SellerInventory.objects.get_or_create(
+                    seller=seller, product=product
+                )
+                seller_inventory.quantity += quantity
+                seller_inventory.save()
+
+                # Create loading record
+                LoadingRecord.objects.create(seller=seller, product=product, quantity=quantity)
+
+        messages.success(request, "Stock chargé avec succès!")
+        return redirect('products:load_inventory')
+    
+    sellers = Seller.objects.all()
+    products = Product.objects.all()
+    return render(request, 'inventory/load_inventory.html', {'sellers': sellers, 'products': products})
+
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib import messages
+from .models import Seller, SellerInventory, UnloadingRecord, Product, SalesRecord
+
+from django.db.models import Sum
+from django.utils.timezone import now
+
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib import messages
+from django.utils.timezone import now
+from .models import Seller, SellerInventory, UnloadingRecord, SalesRecord, Product
+
+def unload_inventory(request):
+    seller_id = request.GET.get('seller') or request.POST.get('seller')  # Ensure we get seller from GET or POST
+    seller_inventory = []
+
+    if seller_id:
+        try:
+            seller = Seller.objects.get(id=seller_id)
+        except Seller.DoesNotExist:
+            messages.error(request, "Vendeur invalide sélectionné.")
+            return redirect('products:unload_inventory')
+        
+        seller_inventory = SellerInventory.objects.filter(seller=seller)
+
+    if request.method == 'POST':
+        seller_id = request.POST.get('seller')
+
+        if not seller_id:
+            messages.error(request, "Veuillez sélectionner un vendeur avant de soumettre.")
+            return redirect('products:unload_inventory')
+
+        seller = get_object_or_404(Seller, id=seller_id)
+        sales_records = []
+
+        for item in SellerInventory.objects.filter(seller=seller):
+            loaded_quantity = item.quantity  # Quantity loaded
+            unloaded_quantity = int(request.POST.get(f'quantity_{item.product.id}', 0) or 0)  # Default to 0 if empty
+
+            if unloaded_quantity > 0:
+                item.quantity -= unloaded_quantity
+                item.save()
+
+                item.product.quantity += unloaded_quantity  # Return to warehouse
+                item.product.save()
+
+                UnloadingRecord.objects.create(
+                    seller=seller,
+                    product=item.product,
+                    quantity=unloaded_quantity,
+                    date=now().date()
+                )
+
+                # Calculate quantity sold
+                quantity_sold = loaded_quantity - unloaded_quantity
+                if quantity_sold > 0:
+                    sales_records.append(SalesRecord(
+                        seller=seller,
+                        product=item.product,
+                        quantity_sold=quantity_sold,
+                        total_amount=quantity_sold * item.product.selling_price,
+                        date=now().date()
+                    ))
+
+        # Save all sales records in bulk
+        SalesRecord.objects.bulk_create(sales_records)
+
+        messages.success(request, "Stock déchargé et ventes calculées avec succès!")
+        return redirect('products:unload_inventory')
+
+    sellers = Seller.objects.all()
+    return render(request, 'inventory/unload_inventory.html', {
+        'sellers': sellers,
+        'seller_inventory': seller_inventory,
+        'selected_seller_id': seller_id  # Ensure seller remains selected
+    })
+
+
+from django.db.models import Sum
+from django.utils.timezone import now
+from django.shortcuts import render
+from .models import SalesEntry
+
+def sales_report(request):
+    selected_date = request.GET.get('date', now().date())
+
+    sales = SalesEntry.objects.filter(date=selected_date).values(
+        'date', 'product__name'
+    ).annotate(
+        total_quantity_sold=Sum('quantity'),
+        total_sales=Sum('quantity') * Sum('product__selling_price')
+    ).order_by('date')
+
+    return render(request, 'inventory/sales_report.html', {
+        'sales': sales,
+        'selected_date': selected_date
+    })
+
+
+def sale_details(request, sale_id):
+    sale = get_object_or_404(SalesEntry, id=sale_id)
+    total_amount = sale.quantity * sale.product.selling_price  # Calculate total
+
+    return render(request, 'sales/sale_details.html', {
+        'sale': sale,
+        'total_amount': total_amount
+    })

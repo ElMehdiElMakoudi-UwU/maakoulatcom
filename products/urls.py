@@ -28,4 +28,14 @@ urlpatterns = [
     path('orders/<int:order_id>/delete/', views.order_delete, name='order_delete'),
     path('import/', views.import_products_from_csv, name='import_products'),
     path('inventory/export-pdf/', views.export_inventory_to_pdf, name='export_inventory_to_pdf'),
+    path('invoices/', views.invoice_list, name='invoice_list'),
+    path('invoices/new/', views.new_invoice, name='new_invoice'),
+    path('invoices/<int:invoice_id>/', views.invoice_details, name='invoice_details'),
+    path('invoices/<int:invoice_id>/edit/', views.edit_invoice, name='edit_invoice'),
+    path('invoices/<int:invoice_id>/delete/', views.delete_invoice, name='delete_invoice'),
+    path('load/', views.load_inventory, name='load_inventory'),
+    path('unload/', views.unload_inventory, name='unload_inventory'),
+    path('sales-report/', views.sales_report, name='sales_report'),
+    path('sales_report/<int:sale_id>/', views.sale_details, name='sale_details'),
+
 ]
