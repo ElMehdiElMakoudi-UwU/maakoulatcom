@@ -1,0 +1,100 @@
+{% extends 'products/base.html' %}
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">Tableau de Bord</h2>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-white bg-primary mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">Produits</h5>
+                    <p class="card-text display-6">{{ total_products }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-danger mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">Stock Critique</h5>
+                    <p class="card-text display-6">{{ low_stock_count }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-success mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">Ventes du Jour</h5>
+                    <p class="card-text display-6">{{ sales_today|floatformat:2 }} DH</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-warning mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">Ventes du Mois (Actif)</h5>
+                    <p class="card-text display-6">{{ monthly_sales_amount|floatformat:2 }} DH</p>
+                </div>
+            </div>
+        </div>
+        
+    </div>
+
+    <!-- Top Selling Products -->
+    <div class="mb-5">
+        <h4>Top 5 Produits Vendus</h4>
+        <ul class="list-group">
+            {% for product in top_products %}
+            <li class="list-group-item d-flex justify-content-between">
+                {{ product.product__name }}
+                <span>{{ product.total_vendu }}</span>
+            </li>
+        {% endfor %}
+        </ul>
+    </div>
+
+    <!-- Seller Performance Table -->
+    <div class="mb-5">
+        <h4>Ventes par Vendeur (Aujourd'hui)</h4>
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>Vendeur</th>
+                    <th>Quantité Vendue</th>
+                    <th>Total (DH)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in seller_sales_today %}
+                <tr>
+                    <td>{{ row.seller__name }}</td>
+                    <td>{{ row.total_vendu }}</td>
+                    <td>{{ row.total_amount|floatformat:2 }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Low Stock Products -->
+    <div>
+        <h4>Produits Faibles en Stock</h4>
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Produit</th>
+                    <th>Stock</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in low_stock_products %}
+                <tr>
+                    <td>{{ p.name }}</td>
+                    <td>{{ p.quantity }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

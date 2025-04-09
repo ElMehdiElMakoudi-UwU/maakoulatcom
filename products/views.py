@@ -939,3 +939,63 @@ def export_unload_pdf(request, seller_id, date):
     if pisa_status.err:
         return HttpResponse(f'Erreur PDF: {pisa_status.err}')
     return response
+
+
+# products/views.py
+
+from django.shortcuts import render
+from django.utils.timezone import now
+from datetime import timedelta
+from .models import Product, SellerProductDayEntry, Seller
+from django.db.models import Sum, F
+from django.db.models.functions import TruncMonth
+
+
+def metrics_dashboard(request):
+    today = now().date()
+
+    total_products = Product.objects.count()
+    low_stock_products = Product.objects.filter(quantity__lte=10)
+    low_stock_count = low_stock_products.count()  # ✅ Fix 1
+
+    today_sales = SellerProductDayEntry.objects.filter(date=today)
+    total_quantity_sold = today_sales.aggregate(qty=Sum('vendu'))['qty'] or 0
+    total_amount = today_sales.aggregate(amount=Sum('amount'))['amount'] or 0
+
+    active_sellers = Seller.objects.filter(sellerproductdayentry__date=today).distinct()
+    active_sellers_count = active_sellers.count()  # ✅ Fix for seller card
+
+    top_products = (
+        today_sales.values('product__name')
+        .annotate(total_vendu=Sum('vendu'))
+        .order_by('-total_vendu')[:5]
+    )
+
+    sales_by_seller = (
+        today_sales.values('seller__name')
+        .annotate(total_vendu=Sum('vendu'), total_amount=Sum('amount'))
+        .order_by('-total_amount')
+    )
+
+
+    current_month = today.month
+    current_year = today.year
+
+    monthly_sales = SellerProductDayEntry.objects.filter(
+        date__year=current_year, date__month=current_month
+    )
+    monthly_sales_amount = monthly_sales.aggregate(amount=Sum('amount'))['amount'] or 0
+
+    context = {
+        'total_products': total_products,
+        'low_stock_products': low_stock_products,
+        'low_stock_count': low_stock_count,  # ✅ for KPI
+        'sales_today': total_amount,
+        'total_quantity_sold': total_quantity_sold,
+        'active_sellers_count': active_sellers_count,  # ✅ for KPI
+        'top_products': top_products,
+        'seller_sales_today': sales_by_seller,
+        'today': today,
+        'monthly_sales_amount': monthly_sales_amount,
+    }
+    return render(request, 'inventory/metrics_dashboard.html', context)

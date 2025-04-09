@@ -44,4 +44,6 @@ urlpatterns = [
     path('seller-sales-summary/', views.daily_sales_summary, name='daily_sales_summary'),
     path('seller-sales-summary/<int:seller_id>/<date>/', views.daily_sales_detail, name='daily_sales_detail'),
     path('unload-report/<int:seller_id>/<str:date>/', views.export_unload_pdf, name='export_unload_pdf'),
+    path('dashboard/metrics/', views.metrics_dashboard, name='metrics_dashboard'),
+
 ]
