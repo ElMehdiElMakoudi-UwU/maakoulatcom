@@ -734,6 +734,9 @@ from datetime import datetime, timedelta
 from .models import Seller, Product, SellerProductDayEntry
 
 
+from django.urls import reverse
+
+
 def unload_new_inventory(request):
     seller_id = request.GET.get("seller")
     date_str = request.GET.get("date")
@@ -746,11 +749,13 @@ def unload_new_inventory(request):
     if seller_id:
         seller = get_object_or_404(Seller, id=seller_id)
 
+        # Fetch voiture = yesterday's retour
         yesterday = selected_date - timedelta(days=1)
         previous_unloads = SellerProductDayEntry.objects.filter(seller=seller, date=yesterday)
         for entry in previous_unloads:
             voiture_quantities[entry.product.id] = entry.retour
 
+        # Fetch sortie = today's sortie
         today_loads = SellerProductDayEntry.objects.filter(seller=seller, date=selected_date)
         for entry in today_loads:
             sortie_quantities[entry.product.id] = entry.sortie
@@ -763,10 +768,13 @@ def unload_new_inventory(request):
                     seller=seller, product=product, date=selected_date
                 )
                 entry.retour = retour_qty
-                entry.save()  # Triggers .vendu & .amount calculation
+                entry.save()
 
             messages.success(request, "Déchargement enregistré avec succès.")
-            return redirect(f"{request.path}?seller={seller.id}&date={selected_date}")
+
+            # Redirect directly to PDF
+            pdf_url = reverse('products:export_unload_pdf', args=[seller.id, selected_date])
+            return redirect(pdf_url)
 
     return render(request, "inventory/unload_new_inventory.html", {
         "sellers": Seller.objects.all(),
@@ -887,3 +895,47 @@ def daily_sales_detail(request, seller_id, date):
         'date': date,
         'entries': entries,
     })
+
+from django.http import HttpResponse
+from django.template.loader import get_template
+from xhtml2pdf import pisa
+from .models import SellerProductDayEntry, Seller
+from datetime import datetime
+from django.shortcuts import get_object_or_404
+
+def export_unload_pdf(request, seller_id, date):
+    date_obj = datetime.strptime(date, '%Y-%m-%d').date()
+    seller = get_object_or_404(Seller, id=seller_id)
+
+    all_entries = SellerProductDayEntry.objects.filter(
+        seller=seller, date=date_obj
+    ).select_related('product')
+
+    # Filter only entries where vendu > 0
+    filtered_entries = []
+    total_amount = 0
+    for entry in all_entries:
+        entry.vendu = entry.voiture + entry.sortie - entry.retour
+        entry.amount = entry.vendu * entry.product.selling_price
+        if entry.vendu > 0:
+            filtered_entries.append(entry)
+            total_amount += entry.amount
+
+    context = {
+        'seller': seller,
+        'date': date_obj,
+        'entries': filtered_entries,
+        'total_amount': total_amount
+    }
+
+    template_path = 'pdf/unload_report.html'
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = f'filename="{seller.name}-{date}.pdf"'
+
+    template = get_template(template_path)
+    html = template.render(context)
+    pisa_status = pisa.CreatePDF(html, dest=response)
+
+    if pisa_status.err:
+        return HttpResponse(f'Erreur PDF: {pisa_status.err}')
+    return response
