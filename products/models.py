@@ -201,3 +201,30 @@ class DailySellerStockForm(forms.ModelForm):
         widgets = {
             'date': forms.DateInput(attrs={'type': 'date'}),
         }
+
+# products/models.py
+from django.db import models
+from django.utils.timezone import now
+from .models import Seller
+
+class SellerPayment(models.Model):
+    seller = models.ForeignKey(Seller, on_delete=models.CASCADE)
+    date = models.DateField(default=now)
+    expected_amount = models.DecimalField(max_digits=10, decimal_places=2)
+    paid_amount = models.DecimalField(max_digits=10, decimal_places=2)
+    comment = models.TextField(blank=True)
+
+    class Meta:
+        unique_together = ('seller', 'date')
+
+    @property
+    def balance(self):
+        return self.expected_amount - self.paid_amount
+
+    def __str__(self):
+        return f"{self.seller.name} - {self.date}"
+
+# Suggested next steps:
+# - Create view to input daily payments (linked to unload summary)
+# - Create view to list balances per seller
+# - Create repayment view to handle future payment against credit

@@ -999,3 +999,137 @@ def metrics_dashboard(request):
         'monthly_sales_amount': monthly_sales_amount,
     }
     return render(request, 'inventory/metrics_dashboard.html', context)
+
+
+# views.py
+from django.shortcuts import render, get_object_or_404, redirect
+from django.contrib import messages
+from decimal import Decimal
+from django.utils.timezone import now
+from datetime import datetime
+from django.db.models import Sum
+from .models import Seller, SellerProductDayEntry, SellerPayment
+
+def seller_payment_entry(request):
+    seller_id = request.GET.get("seller")
+    date_str = request.GET.get("date")
+    selected_date = datetime.strptime(date_str, "%Y-%m-%d").date() if date_str else now().date()
+
+    seller = get_object_or_404(Seller, id=seller_id) if seller_id else None
+    expected_amount = 0
+    existing_payment = None
+
+    if seller:
+        expected_amount = SellerProductDayEntry.objects.filter(
+            seller=seller, date=selected_date
+        ).aggregate(total=Sum('amount'))['total'] or 0
+
+        existing_payment = SellerPayment.objects.filter(
+            seller=seller, date=selected_date
+        ).first()
+
+        if request.method == "POST":
+            paid_str = request.POST.get("paid_amount")
+            paid_amount = Decimal(paid_str) if paid_str else 0
+
+            SellerPayment.objects.update_or_create(
+                seller=seller,
+                date=selected_date,
+                defaults={
+                    'paid_amount': paid_amount,
+                    'expected_amount': expected_amount
+                }
+            )
+
+            messages.success(request, "Paiement enregistré.")
+            return redirect(f"{reverse('products:seller_payment_history')}?seller={seller.id}")
+
+    return render(request, "payments/payment_entry.html", {
+        "sellers": Seller.objects.all(),
+        "selected_seller": seller,
+        "selected_date": selected_date,
+        "expected_amount": expected_amount,
+        "existing_payment": existing_payment,
+    })
+
+
+# views.py
+
+from django.db.models import Sum, F, ExpressionWrapper, DecimalField, Max
+from django.shortcuts import render
+from .models import SellerPayment
+
+def unpaid_balances_report(request):
+    unpaid_summary = (
+        SellerPayment.objects
+        .values('seller__name', 'seller__id')
+        .annotate(
+            total_expected=Sum('expected_amount'),
+            total_paid=Sum('paid_amount'),
+            total_remaining=ExpressionWrapper(
+                Sum(F('expected_amount')) - Sum(F('paid_amount')),
+                output_field=DecimalField()
+            ),
+            last_payment_date=Max('date')
+        )
+        .filter(
+            expected_amount__gt=F('paid_amount')
+        )
+        .order_by('-total_remaining')
+    )
+
+    return render(request, 'payments/unpaid_balances_report.html', {
+        'unpaid_summary': unpaid_summary
+    })
+
+from django.shortcuts import render, get_object_or_404
+from .models import Seller, SellerPayment, SellerProductDayEntry
+from django.db.models import Sum
+from datetime import datetime
+
+def seller_payment_history(request):
+    seller_id = request.GET.get('seller')
+    seller = get_object_or_404(Seller, id=seller_id) if seller_id else None
+
+    sold_by_day = {}
+    paid_by_day = {}
+
+    if seller:
+        sold = (
+            SellerProductDayEntry.objects
+            .filter(seller=seller)
+            .values('date')
+            .annotate(total_sold=Sum('amount'))
+        )
+        for row in sold:
+            sold_by_day[row['date']] = row['total_sold']
+
+        payments = (
+            SellerPayment.objects
+            .filter(seller=seller)
+            .values('date')
+            .annotate(total_paid=Sum('paid_amount'))
+        )
+        for row in payments:
+            paid_by_day[row['date']] = row['total_paid']
+
+    # Combine all unique dates
+    all_dates = sorted(set(sold_by_day.keys()) | set(paid_by_day.keys()))
+
+    history = []
+    for date in all_dates:
+        sold = sold_by_day.get(date, 0)
+        paid = paid_by_day.get(date, 0)
+        history.append({
+            'date': date,
+            'sold': sold,
+            'paid': paid,
+            'remaining': sold - paid
+        })
+
+    context = {
+        'sellers': Seller.objects.all(),
+        'selected_seller': seller,
+        'history': history
+    }
+    return render(request, 'payments/seller_payment_history.html', context)
