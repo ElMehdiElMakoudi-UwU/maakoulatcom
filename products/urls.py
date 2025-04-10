@@ -37,5 +37,16 @@ urlpatterns = [
     path('unload/', views.unload_inventory, name='unload_inventory'),
     path('sales-report/', views.sales_report, name='sales_report'),
     path('sales_report/<int:sale_id>/', views.sale_details, name='sale_details'),
+    path('manager-inventory/', views.manager_inventory, name='manager_inventory'),
+    path('seller-stock/', views.daily_seller_stock, name='daily_seller_stock'),
+    path('seller-stock/load/', views.load_new_inventory, name='load_new_inventory'),
+    path('seller-stock/unload/', views.unload_new_inventory, name='unload_new_inventory'),
+    path('seller-sales-summary/', views.daily_sales_summary, name='daily_sales_summary'),
+    path('seller-sales-summary/<int:seller_id>/<date>/', views.daily_sales_detail, name='daily_sales_detail'),
+    path('unload-report/<int:seller_id>/<str:date>/', views.export_unload_pdf, name='export_unload_pdf'),
+    path('dashboard/metrics/', views.metrics_dashboard, name='metrics_dashboard'),
+    path('payments/', views.seller_payment_entry, name='seller_payment_entry'),
+    path('payments/unpaid-report/', views.unpaid_balances_report, name='unpaid_balances_report'),
+    path('payments/history/', views.seller_payment_history, name='seller_payment_history'),
 
 ]

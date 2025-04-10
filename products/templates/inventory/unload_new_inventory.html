@@ -1,0 +1,108 @@
+{% extends 'products/base.html' %}
+{% load custom_filters %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Déchargement Journalier</h2>
+
+    <!-- Date + Seller Selection -->
+    <form method="get" class="row g-3 mb-4">
+        <div class="col-md-4">
+            <label for="seller" class="form-label">Vendeur</label>
+            <select name="seller" id="seller" class="form-select" onchange="this.form.submit()">
+                <option value="">-- Choisir --</option>
+                {% for s in sellers %}
+                    <option value="{{ s.id }}" {% if selected_seller and s.id == selected_seller.id %}selected{% endif %}>{{ s.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-4">
+            <label for="date" class="form-label">Date</label>
+            <input type="date" name="date" id="date" class="form-control" value="{{ selected_date|date:'Y-m-d' }}" onchange="this.form.submit()">
+        </div>
+    </form>
+    {% if selected_seller and selected_date %}
+    <a href="{% url 'products:export_unload_pdf' selected_seller.id selected_date %}"
+    class="btn btn-outline-secondary ms-2" target="_blank">
+        Exporter PDF
+    </a>
+    {% endif %}
+
+
+    {% if selected_seller %}
+    <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="seller" value="{{ selected_seller.id }}">
+        <input type="hidden" name="date" value="{{ selected_date }}">
+        <div class="text-end">
+            <button type="submit" class="btn btn-primary">Enregistrer</button>
+        </div>
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>Produit</th>
+                    <th>Voiture</th>
+                    <th>Sortie</th>
+                    <th>Retour</th>
+                    <th>Vendu (auto)</th>
+                    <th>Montant (auto)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for product in products %}
+                <tr>
+                    <td>{{ product.name }}</td>
+                    <td>
+                        <input type="number" class="form-control voiture" name="voiture_{{ product.id }}"
+                               value="{{ voiture|get_item:product.id|default:0 }}" readonly>
+                    </td>
+                    <td>
+                        <input type="number" class="form-control sortie" name="sortie_{{ product.id }}"
+                               value="{{ sortie|get_item:product.id|default:0 }}" readonly>
+                    </td>
+                    <td>
+                        <input type="number" class="form-control retour" name="retour_{{ product.id }}"
+                               min="0" value="0" data-product-id="{{ product.id }}">
+                    </td>
+                    <td>
+                        <input type="number" class="form-control vendu" name="vendu_{{ product.id }}" readonly>
+                    </td>
+                    <td>
+                        <input type="text" class="form-control montant" name="montant_{{ product.id }}" readonly
+                               data-price="{{ product.selling_price }}">
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+                    </table>
+    </form>
+    {% endif %}
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const rows = document.querySelectorAll('tbody tr');
+    
+        rows.forEach(row => {
+            const retourInput = row.querySelector('.retour');
+            const voiture = parseInt(row.querySelector('.voiture').value) || 0;
+            const sortie = parseInt(row.querySelector('.sortie').value) || 0;
+            const venduField = row.querySelector('.vendu');
+            const montantField = row.querySelector('.montant');
+            const price = parseFloat(montantField.dataset.price);
+    
+            function updateValues() {
+                const retour = parseInt(retourInput.value) || 0;
+                const vendu = voiture + sortie - retour;
+                const montant = vendu * price;
+    
+                venduField.value = vendu;
+                montantField.value = montant.toFixed(2) + ' DH';
+            }
+    
+            retourInput.addEventListener('input', updateValues);
+        });
+    });
+    </script>
+    
+{% endblock %}

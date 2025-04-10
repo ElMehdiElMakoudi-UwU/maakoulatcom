@@ -1,0 +1,30 @@
+{% extends 'products/base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">Rapport des Soldes Non Payés</h2>
+
+    <table class="table table-bordered">
+        <thead class="table-light">
+            <tr>
+                <th>Vendeur</th>
+                <th>Total Impayé (DH)</th>
+                <th>Dernier Paiement</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in unpaid_summary %}
+            <tr>
+                <td>{{ row.seller__name }}</td>
+                <td>{{ row.total_remaining|floatformat:2 }}</td>
+                <td>{{ row.last_payment_date|date:"Y-m-d" }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="3" class="text-center">Aucun solde impayé trouvé.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

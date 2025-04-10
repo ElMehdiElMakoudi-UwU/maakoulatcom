@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
     <style>
         /* Flexbox layout for the body */
         html, body {
@@ -20,73 +21,94 @@
     <title>{% block title %}Maakoulatcom Distribution{% endblock %}</title>
 </head>
 <body>
-    <!-- Navbar -->
     <nav class="navbar navbar-expand-lg navbar-light bg-light">
         <div class="container-fluid">
-            <a class="navbar-brand" href="{% url 'products:dashboard' %}">Maakoulatcom Distribution</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <a class="navbar-brand" href="{% url 'products:dashboard' %}">
+                <i class="bi bi-shop"></i> Maakoulatcom
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
+    
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav">
-                    <!-- Produits -->
+    
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'products:product_list' %}">Produits</a>
-                    </li>
-                    <!-- Inventaire -->
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'products:inventory_status' %}">Inventaire</a>
-                    </li>
-                    <!-- Entrées & Ventes -->
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            Gestion des Entrées & Ventes
+                        <a class="nav-link" href="{% url 'products:product_list' %}">
+                            <i class="bi bi-box-seam"></i> Produits
                         </a>
-                        <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
-                            <li><a class="dropdown-item" href="{% url 'products:inventory_entry' %}">Ajouter une Entrée</a></li>
-                            <li><a class="dropdown-item" href="{% url 'products:sales_entry' %}">Ajouter une Vente</a></li>
-                            <li><a class="dropdown-item" href="{% url 'products:inventory_entries' %}">Gérer les Entrées</a></li>
-                            <li><a class="dropdown-item" href="{% url 'products:sales_entries' %}">Gérer les Ventes</a></li>
+                    </li>
+    
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'products:inventory_status' %}">
+                            <i class="bi bi-archive"></i> Inventaire
+                        </a>
+                    </li>
+    
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="entriesDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-cart-plus"></i> Entrées & Ventes
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{% url 'products:inventory_entry' %}">Nouvelle Entrée</a></li>
+                            <li><a class="dropdown-item" href="{% url 'products:sales_entry' %}">Nouvelle Vente</a></li>
+                            <li><a class="dropdown-item" href="{% url 'products:inventory_entries' %}">Gérer Entrées</a></li>
+                            <li><a class="dropdown-item" href="{% url 'products:sales_entries' %}">Gérer Ventes</a></li>
+                            <li><a class="dropdown-item" href="{% url 'products:bulk_operations' %}">Opérations en Masse</a></li>
                         </ul>
                     </li>
-                    <!-- Entrées & Ventes -->
+    
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            Operations
+                        <a class="nav-link dropdown-toggle" href="#" id="dailyStockDropdown" role="button"
+                           data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-calendar-check"></i> Suivi Journalier
                         </a>
-                        <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
-                            <li><a class="dropdown-item" href="{% url 'products:load_inventory' %}">
-                                Chargements
-                            </a></li>
-                            <li><a class="dropdown-item" href="{% url 'products:unload_inventory' %}">
-                                Dechargements
-                            </a></li>
-                            <li><a class="dropdown-item" href="{% url 'products:sales_report' %}">
-                                Ventes
-                            </a></li>
+                        <ul class="dropdown-menu" aria-labelledby="dailyStockDropdown">
+                            <li><a class="dropdown-item" href="{% url 'products:daily_seller_stock' %}">Stock Journalier</a></li>
+                            <li><a class="dropdown-item" href="{% url 'products:load_new_inventory' %}">Chargement (Matin)</a></li>
+                            <li><a class="dropdown-item" href="{% url 'products:unload_new_inventory' %}">Déchargement (Soir)</a></li>
                         </ul>
                     </li>
-                    <!-- Commandes -->
+    
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'products:order_list' %}">Commandes</a>
+                        <a class="nav-link" href="{% url 'products:daily_sales_summary' %}">
+                            <i class="bi bi-graph-up"></i> Résumé des Ventes
+                        </a>
                     </li>
-                    <!-- Factures -->
+    
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'products:invoice_list' %}">Factures</a>
+                        <a class="nav-link" href="{% url 'products:order_list' %}">
+                            <i class="bi bi-basket"></i> Commandes
+                        </a>
                     </li>
-                    <!-- Importer Produits -->
+    
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'products:import_products' %}">Importer Produits</a>
+                        <a class="nav-link" href="{% url 'products:invoice_list' %}">
+                            <i class="bi bi-receipt-cutoff"></i> Factures
+                        </a>
                     </li>
-                    <!-- Exporter Inventaire -->
-                    <!-- <li class="nav-item">
-                        <a class="nav-link" href="{% url 'products:export_inventory_to_pdf' %}">Exporter Inventaire (PDF)</a>
-                    </li> -->
+    
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="reportsDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-file-earmark-bar-graph"></i> Rapports
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{% url 'products:sales_report' %}">Rapport de Ventes</a></li>
+                            <li><a class="dropdown-item" href="{% url 'products:export_inventory_to_pdf' %}">Exporter Inventaire (PDF)</a></li>
+                        </ul>
+                    </li>
+    
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'products:import_products' %}">
+                            <i class="bi bi-upload"></i> Importer Produits
+                        </a>
+                    </li>
+    
                 </ul>
             </div>
         </div>
     </nav>
-
+            
     <!-- Content Block -->
     <main class="container mt-5">
         {% block content %}

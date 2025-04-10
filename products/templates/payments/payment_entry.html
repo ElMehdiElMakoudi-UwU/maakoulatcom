@@ -1,0 +1,47 @@
+{% extends 'products/base.html' %}
+{% block content %}
+<div class="container mt-4">
+    <h2>Paiement du Vendeur</h2>
+
+    <form method="get" class="row g-3 mb-4">
+        <div class="col-md-4">
+            <label for="seller" class="form-label">Vendeur</label>
+            <select name="seller" id="seller" class="form-select" onchange="this.form.submit()">
+                <option value="">-- Choisir --</option>
+                {% for s in sellers %}
+                    <option value="{{ s.id }}" {% if selected_seller and s.id == selected_seller.id %}selected{% endif %}>{{ s.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-4">
+            <label for="date" class="form-label">Date</label>
+            <input type="date" name="date" id="date" class="form-control" value="{{ selected_date|date:'Y-m-d' }}" onchange="this.form.submit()">
+        </div>
+    </form>
+
+    {% if selected_seller %}
+    <form method="post" class="mt-4">
+        {% csrf_token %}
+
+        <div class="mb-3">
+            <label class="form-label">Montant attendu :</label>
+            <input type="text" class="form-control" value="{{ expected_amount|floatformat:2 }} DH" readonly>
+        </div>
+
+        <div class="mb-3">
+            <label for="paid_amount">Montant payé:</label>
+            <input type="number" name="paid_amount" step="0.01" class="form-control" required value="{{ existing_payment.paid_amount|default:'' }}">
+        </div>
+
+        {% if existing_payment %}
+        <div class="mb-3">
+            <label class="form-label">Montant restant :</label>
+            <input type="text" class="form-control" value="{{ existing_payment.balance|floatformat:2 }} DH" readonly>
+        </div>
+        {% endif %}
+
+        <button type="submit" class="btn btn-primary">Enregistrer Paiement</button>
+    </form>
+    {% endif %}
+</div>
+{% endblock %}

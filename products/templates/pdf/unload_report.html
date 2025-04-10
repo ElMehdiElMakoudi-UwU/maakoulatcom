@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: Arial, sans-serif; }
+        h2 { text-align: center; margin-bottom: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { border: 1px solid #333; padding: 6px; text-align: center; }
+    </style>
+</head>
+<body>
+    <h2>{{ seller.name }} - {{ date }}</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Produit</th>
+                <th>Voiture</th>
+                <th>Sortie</th>
+                <th>Retour</th>
+                <th>Vendu</th>
+                <th>Montant</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for e in entries %}
+            <tr>
+                <td>{{ e.product.name }}</td>
+                <td>{{ e.voiture }}</td>
+                <td>{{ e.sortie }}</td>
+                <td>{{ e.retour }}</td>
+                <td>{{ e.vendu }}</td>
+                <td>{{ e.amount|floatformat:2 }} DH</td>
+            </tr>
+            {% endfor %}
+            <tr>
+                <th colspan="5" style="text-align: right;">Total</th>
+                <th>{{ total_amount|floatformat:2 }} DH</th>
+            </tr>
+        </tbody>
+    </table>
+</body>
+</html>
