@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {
+            font-family: sans-serif;
+            font-size: 11px;
+            width: 80mm;
+        }
+        h2, h3 {
+            text-align: center;
+            margin: 4px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 8px;
+        }
+        th, td {
+            text-align: left;
+            padding: 4px 0;
+        }
+        .totals {
+            margin-top: 10px;
+        }
+        .totals td {
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h2>Maakoulatcom</h2>
+    <h3>Reçu de Commande</h3>
+
+    <p><strong>Client:</strong> {{ order.customer.name }}</p>
+    <p><strong>Tél:</strong> {{ order.customer.phone }}</p>
+    <p><strong>Vendeur:</strong> {{ order.seller.name }}</p>
+    <p><strong>Date:</strong> {{ order.date|date:"d/m/Y H:i" }}</p>
+    <hr>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Produit</th>
+                <th>Qté</th>
+                <th>Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in order.items.all %}
+            <tr>
+                <td>{{ item.product.name }}</td>
+                <td>{{ item.quantity }}</td>
+                <td>{{ item.total_price|floatformat:2 }} DH</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <hr>
+    <table class="totals">
+        <tr>
+            <td>Total:</td>
+            <td style="text-align: right">{{ order.total_amount|floatformat:2 }} DH</td>
+        </tr>
+    </table>
+
+    <p style="text-align:center; margin-top: 20px;">Merci pour votre confiance !</p>
+</body>
+</html>

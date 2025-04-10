@@ -1,0 +1,61 @@
+{% extends 'products/base.html' %}
+
+{% block content %}
+<h2>Mes Commandes Clients</h2>
+
+<form method="get" class="row mb-4">
+    <div class="col-md-3">
+        <label for="seller" class="form-label">Vendeur</label>
+        <select name="seller" id="seller" class="form-select">
+            <option value="">Tous</option>
+            {% for s in sellers %}
+                <option value="{{ s.id }}" {% if selected_seller == s.id %}selected{% endif %}>{{ s.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-md-3">
+        <label for="customer" class="form-label">Client</label>
+        <select name="customer" id="customer" class="form-select">
+            <option value="">Tous</option>
+            {% for c in customers %}
+                <option value="{{ c.id }}" {% if selected_customer == c.id %}selected{% endif %}>{{ c.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-md-3">
+        <label for="date" class="form-label">Date</label>
+        <input type="date" name="date" id="date" class="form-control" value="{{ selected_date }}">
+    </div>
+    <div class="col-md-3 d-flex align-items-end">
+        <button type="submit" class="btn btn-primary w-100">Filtrer</button>
+    </div>
+</form>
+
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Client</th>
+            <th>Vendeur</th>
+            <th>Date</th>
+            <th>Montant Total</th>
+            <th>Action</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for order in orders %}
+        <tr>
+            <td>{{ order.id }}</td>
+            <td>{{ order.customer.name }}</td>
+            <td>{{ order.seller.name }}</td>
+            <td>{{ order.date }}</td>
+            <td>{{ order.total_amount }} DH</td>
+            <td>
+                <a href="{% url 'products:order_detail' order.id %}" class="btn btn-sm btn-info">Détails</a>
+                <a href="{% url 'products:order_pdf' order.id %}" class="btn btn-sm btn-secondary">PDF</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

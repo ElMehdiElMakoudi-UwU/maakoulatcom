@@ -1,0 +1,17 @@
+{% extends 'products/base.html' %}
+{% block content %}
+<h2>Ajouter Client</h2>
+<form method="post">{% csrf_token %}
+  <div class="mb-3">
+    <label>Nom</label><input type="text" name="name" class="form-control" required>
+  </div>
+  <div class="mb-3">
+    <label>Téléphone</label><input type="text" name="phone" class="form-control">
+  </div>
+  <div class="mb-3">
+    <label>Adresse</label><textarea name="address" class="form-control"></textarea>
+  </div>
+  <button class="btn btn-primary">Enregistrer</button>
+</form>
+{% endblock %}
+
