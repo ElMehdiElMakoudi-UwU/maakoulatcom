@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Reçu - {{ order.customer.name }}</title>
+    <style>
+        body {
+            width: 58mm;
+            font-family: monospace;
+        }
+        h2, p {
+            margin: 0;
+            padding: 0;
+            text-align: center;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11px;
+        }
+        th, td {
+            text-align: left;
+        }
+        .totals {
+            margin-top: 10px;
+        }
+        @media print {
+            .no-print { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <h2>Maakoulatcom</h2>
+    <p>Date: {{ order.date|date:"d/m/Y" }}</p>
+    <p>Client: {{ order.customer.name }}</p>
+    <hr>
+    <table>
+        <thead>
+            <tr>
+                <th>Produit</th>
+                <th>Qté</th>
+                <th>Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in order.items.all %}
+            <tr>
+                <td>{{ item.product.name }}</td>
+                <td>{{ item.quantity }}</td>
+                <td>{{ item.total_price }} DH</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <hr>
+    <p><strong>Total: {{ order.total_amount }} DH</strong></p>
+
+    <button onclick="window.print()" class="no-print">Imprimer</button>
+</body>
+</html>

@@ -89,13 +89,17 @@ class InvoiceItem(models.Model):
         self.total_price = self.unit_price * self.quantity
         super().save(*args, **kwargs)
 
+from django.contrib.auth.models import User
+
 class Seller(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True)
     name = models.CharField(max_length=100)
     email = models.EmailField(unique=True)
     phone = models.CharField(max_length=15)
 
     def __str__(self):
         return self.name
+
 
 class SellerInventory(models.Model):
     seller = models.ForeignKey(Seller, on_delete=models.CASCADE)
@@ -224,7 +228,38 @@ class SellerPayment(models.Model):
     def __str__(self):
         return f"{self.seller.name} - {self.date}"
 
-# Suggested next steps:
-# - Create view to input daily payments (linked to unload summary)
-# - Create view to list balances per seller
-# - Create repayment view to handle future payment against credit
+from django.db import models
+
+class Customer(models.Model):
+    name = models.CharField(max_length=100)
+    phone = models.CharField(max_length=20, blank=True, null=True)
+    address = models.TextField(blank=True, null=True)
+    seller = models.ForeignKey('Seller', on_delete=models.CASCADE, related_name='customers')
+
+    def __str__(self):
+        return f"{self.name} ({self.seller.name})"
+
+class CustomerOrder(models.Model):
+    seller = models.ForeignKey(Seller, on_delete=models.CASCADE)
+    customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
+    date = models.DateTimeField(auto_now_add=True)
+    total_amount = models.DecimalField(max_digits=10, decimal_places=2)
+    status = models.CharField(max_length=20, default='Pending')
+
+    def __str__(self):
+        return f"Order #{self.id} - {self.customer.name} - {self.date.strftime('%Y-%m-%d')}"
+
+class CustomerOrderItem(models.Model):
+    order = models.ForeignKey(CustomerOrder, related_name='items', on_delete=models.CASCADE)
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    quantity = models.PositiveIntegerField()
+    unit_price = models.DecimalField(max_digits=10, decimal_places=2)
+    total_price = models.DecimalField(max_digits=10, decimal_places=2)
+
+    def save(self, *args, **kwargs):
+        self.unit_price = self.product.selling_price
+        self.total_price = self.unit_price * self.quantity
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.product.name} x{self.quantity} = {self.total_price} DH"

@@ -42,9 +42,9 @@ Order List
                 <td>{{ order.total_amount }}</td>
                 <td>{{ order.status }}</td>
                 <td>
-                    <a href="{% url 'products:order_details' order.id %}" class="btn btn-info btn-sm">Details</a>
-                    <a href="{% url 'products:order_edit' order.id %}" class="btn btn-warning btn-sm">Edit</a>
-                    <form method="post" action="{% url 'products:order_delete' order.id %}" style="display:inline;">
+                    <a href="{% url 'products:commandes_details' order.id %}" class="btn btn-info btn-sm">Details</a>
+                    <a href="{% url 'products:commandes_edit' order.id %}" class="btn btn-warning btn-sm">Edit</a>
+                    <form method="post" action="{% url 'products:commandes_delete' order.id %}" style="display:inline;">
                         {% csrf_token %}
                         <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to delete this order?');">Delete</button>
                     </form>

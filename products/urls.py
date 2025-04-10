@@ -22,10 +22,10 @@ urlpatterns = [
     path('status/', views.inventory_status, name='inventory_status'),
     path('bulk-operations/', views.bulk_operations, name='bulk_operations'),
     path('reorder/', views.reorder_page, name='reorder_page'),
-    path('orders/', views.order_list, name='order_list'),
-    path('orders/<int:order_id>/', views.order_details, name='order_details'),
-    path('orders/<int:order_id>/edit/', views.order_edit, name='order_edit'),
-    path('orders/<int:order_id>/delete/', views.order_delete, name='order_delete'),
+    path('commandes/', views.order_list, name='commandes_list'),
+    path('commandes/<int:order_id>/', views.order_details, name='commandes_details'),
+    path('commandes/<int:order_id>/edit/', views.order_edit, name='commandes_edit'),
+    path('commandes/<int:order_id>/delete/', views.order_delete, name='commandes_delete'),
     path('import/', views.import_products_from_csv, name='import_products'),
     path('inventory/export-pdf/', views.export_inventory_to_pdf, name='export_inventory_to_pdf'),
     path('invoices/', views.invoice_list, name='invoice_list'),
@@ -48,5 +48,15 @@ urlpatterns = [
     path('payments/', views.seller_payment_entry, name='seller_payment_entry'),
     path('payments/unpaid-report/', views.unpaid_balances_report, name='unpaid_balances_report'),
     path('payments/history/', views.seller_payment_history, name='seller_payment_history'),
+    # Customer management
+    path('clients/', views.customer_list, name='customer_list'),
+    path('clients/add/', views.customer_create, name='customer_create'),
+    # Order management
+    path('orders/', views.customer_order_list, name='order_list'),
+    path('orders/create/<int:customer_id>/', views.order_create, name='order_create'),
+    path('orders/<int:order_id>/', views.order_detail, name='order_detail'),
+    path('orders/<int:order_id>/pdf/', views.order_pdf, name='order_pdf'),
+    # urls.py
+    path('orders/<int:order_id>/receipt/', views.order_receipt, name='order_receipt'),
 
 ]

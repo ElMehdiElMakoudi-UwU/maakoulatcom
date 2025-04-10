@@ -1133,3 +1133,170 @@ def seller_payment_history(request):
         'history': history
     }
     return render(request, 'payments/seller_payment_history.html', context)
+
+
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from .models import Customer, Seller, Product
+from .models import CustomerOrder, CustomerOrderItem
+from django.template.loader import get_template
+from xhtml2pdf import pisa
+from django.http import HttpResponse
+from django.utils.timezone import now
+
+from django.contrib.auth.decorators import login_required
+from django.core.exceptions import ObjectDoesNotExist
+
+@login_required
+def customer_list(request):
+    try:
+        seller = request.user.seller
+        customers = Customer.objects.filter(seller=seller)
+    except (AttributeError, ObjectDoesNotExist):
+        customers = Customer.objects.none()  # Or show all if admin
+    
+    return render(request, "sales/customer_list.html", {
+        "customers": customers
+    })
+
+from django.core.exceptions import ObjectDoesNotExist
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import render, redirect
+from .models import Customer
+
+@login_required
+def customer_create(request):
+    if request.method == "POST":
+        name = request.POST.get("name")
+        phone = request.POST.get("phone")
+        address = request.POST.get("address")
+
+        try:
+            seller = request.user.seller
+        except ObjectDoesNotExist:
+            messages.error(request, "Aucun vendeur n'est lié à ce compte utilisateur.")
+            return redirect("products:customer_list")
+
+        customer = Customer.objects.create(name=name, phone=phone, address=address, seller=seller)
+        print(f"✅ Nouveau client ajouté : {customer.name}")
+        messages.success(request, "Client ajouté avec succès.")
+        return redirect("products:customer_list")
+
+    return render(request, "sales/customer_form.html")
+
+from django.shortcuts import render, get_object_or_404, redirect
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from .models import Product, Customer, CustomerOrder, CustomerOrderItem
+from decimal import Decimal
+from django.utils.timezone import now
+
+@login_required
+def order_create(request, customer_id):
+    customer = get_object_or_404(Customer, id=customer_id, seller=request.user.seller)
+    products = Product.objects.all()
+
+    if request.method == "POST":
+        total = Decimal("0.00")
+        order = CustomerOrder.objects.create(
+            seller=request.user.seller,
+            customer=customer,
+            status="completed",  # or use a form/select for status
+            total_amount=0  # temporary
+        )
+
+        for product in products:
+            qty_str = request.POST.get(f"product_{product.id}")
+            if qty_str:
+                quantity = int(qty_str)
+                if quantity > 0:
+                    total_price = product.selling_price * quantity
+                    CustomerOrderItem.objects.create(
+                        order=order,
+                        product=product,
+                        quantity=quantity,
+                        unit_price=product.selling_price,
+                        total_price=total_price
+                    )
+                    total += total_price
+
+        order.total_amount = total
+        order.save()
+
+        messages.success(request, "Commande enregistrée avec succès.")
+        return redirect("products:order_detail", order_id=order.id)
+
+    return render(request, "sales/order_create.html", {
+        "customer": customer,
+        "products": products
+    })
+
+@login_required
+def order_detail(request, order_id):
+    order = get_object_or_404(CustomerOrder, id=order_id, seller=request.user.seller)
+    return render(request, "sales/order_detail.html", {"order": order})
+
+
+# views.py
+from django.template.loader import get_template
+from xhtml2pdf import pisa
+from django.http import HttpResponse
+from .models import CustomerOrder
+from django.shortcuts import get_object_or_404
+
+@login_required
+def order_pdf(request, order_id):
+    order = get_object_or_404(CustomerOrder.objects.select_related('customer', 'seller').prefetch_related('items__product'), id=order_id)
+
+    template = get_template("pdf/order_receipt.html")
+    html = template.render({"order": order})
+
+    response = HttpResponse(content_type="application/pdf")
+    response["Content-Disposition"] = f'inline; filename="Order-{order.id}.pdf"'
+
+    pisa_status = pisa.CreatePDF(html, dest=response)
+    if pisa_status.err:
+        return HttpResponse("Erreur lors de la génération du PDF", status=500)
+    return response
+
+
+# views.py
+@login_required
+def order_receipt(request, order_id):
+    order = get_object_or_404(CustomerOrder, id=order_id, seller=request.user.seller)
+    return render(request, 'pdf/order_receipt_mini.html', {'order': order})
+
+
+from .models import CustomerOrder
+from django.contrib.auth.decorators import login_required
+
+from django.db.models import Q
+from django.utils.dateparse import parse_date
+
+def customer_order_list(request):
+    sellers = Seller.objects.all()
+    customers = Customer.objects.all()
+
+    seller_id = request.GET.get('seller')
+    customer_id = request.GET.get('customer')
+    date = request.GET.get('date')
+
+    orders = CustomerOrder.objects.all().select_related('customer', 'seller')
+
+    if seller_id:
+        orders = orders.filter(seller_id=seller_id)
+    if customer_id:
+        orders = orders.filter(customer_id=customer_id)
+    if date:
+        orders = orders.filter(date=date)
+
+    return render(request, 'sales/customer_order_list.html', {
+        'orders': orders,
+        'sellers': sellers,
+        'customers': customers,
+        'selected_seller': int(seller_id) if seller_id else None,
+        'selected_customer': int(customer_id) if customer_id else None,
+        'selected_date': date,
+    })

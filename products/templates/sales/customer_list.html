@@ -1,0 +1,24 @@
+{% extends 'products/base.html' %}
+{% block content %}
+<h2>Mes Clients</h2>
+<a href="{% url 'products:customer_create' %}" class="btn btn-success mb-3">Nouveau Client</a>
+<table class="table">
+  <thead><tr><th>Nom</th><th>Téléphone</th><th>Adresse</th><th></th></tr></thead>
+  <tbody>
+    {% for customer in customers %}
+    <tr>
+      <td>{{ customer.name }}</td>
+      <td>{{ customer.phone }}</td>
+      <td>{{ customer.address }}</td>
+      <td>
+        <a href="{% url 'products:order_create' customer.id %}" class="btn btn-primary btn-sm">Nouvelle Commande</a>
+        <a href="{% url 'products:order_list' %}?customer={{ customer.id }}" class="btn btn-sm btn-outline-primary">
+          Voir Commandes
+        </a>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
+
