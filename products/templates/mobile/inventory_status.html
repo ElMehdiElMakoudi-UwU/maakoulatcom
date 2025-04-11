@@ -1,0 +1,22 @@
+{% extends 'mobile/base_mobile.html' %}
+{% block content %}
+<div class="container mt-4">
+  <h3 class="mb-4 text-center">Mon Inventaire</h3>
+  <table class="table table-bordered table-sm">
+    <thead class="table-light">
+      <tr>
+        <th>Produit</th>
+        <th>Quantité</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in inventory %}
+      <tr>
+        <td>{{ item.product.name }}</td>
+        <td>{{ item.quantity }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

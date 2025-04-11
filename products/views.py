@@ -665,6 +665,10 @@ from datetime import datetime, timedelta
 from .models import Seller, Product, SellerProductDayEntry
 
 
+from django.template.loader import get_template
+from django.http import HttpResponse
+from xhtml2pdf import pisa
+
 def load_new_inventory(request):
     sellers = Seller.objects.all()
     products = Product.objects.all()
@@ -677,7 +681,6 @@ def load_new_inventory(request):
     if selected_seller_id:
         selected_seller = get_object_or_404(Seller, id=selected_seller_id)
 
-        # Load voiture quantities from yesterday
         yesterday = selected_date - timedelta(days=1)
         for product in products:
             yesterday_entry = SellerProductDayEntry.objects.filter(
@@ -686,11 +689,12 @@ def load_new_inventory(request):
             voiture_quantities[product.id] = yesterday_entry.retour if yesterday_entry else 0
 
         if request.method == 'POST':
+            entries = []
             for product in products:
                 sortie_qty = int(request.POST.get(f'sortie_{product.id}', 0))
                 voiture_qty = voiture_quantities.get(product.id, 0)
 
-                SellerProductDayEntry.objects.update_or_create(
+                entry, _ = SellerProductDayEntry.objects.update_or_create(
                     seller=selected_seller,
                     product=product,
                     date=selected_date,
@@ -700,8 +704,21 @@ def load_new_inventory(request):
                         'retour': 0,
                     }
                 )
-            messages.success(request, "Chargement du vendeur enregistré avec succès.")
-            return redirect(f"{request.path}?seller={selected_seller_id}&date={selected_date}")
+                entry.total_loaded = voiture_qty + sortie_qty
+                entries.append(entry)
+
+            # Generate PDF
+            template = get_template('pdf/load_report.html')
+            html = template.render({
+                'seller': selected_seller,
+                'date': selected_date,
+                'entries': entries,
+            })
+
+            response = HttpResponse(content_type='application/pdf')
+            response['Content-Disposition'] = f'filename="Chargement-{selected_seller.name}-{selected_date}.pdf"'
+            pisa.CreatePDF(html, dest=response)
+            return response
 
     return render(request, 'inventory/load_new_inventory.html', {
         'sellers': sellers,
@@ -710,7 +727,6 @@ def load_new_inventory(request):
         'selected_seller_id': selected_seller_id,
         'selected_date': selected_date.strftime('%Y-%m-%d'),
     })
-
 
 # views.py (continued)
 from django.utils.timezone import localdate
@@ -1299,4 +1315,185 @@ def customer_order_list(request):
         'selected_seller': int(seller_id) if seller_id else None,
         'selected_customer': int(customer_id) if customer_id else None,
         'selected_date': date,
+    })
+
+
+from django.template.loader import get_template
+from django.http import HttpResponse
+from xhtml2pdf import pisa
+from .models import SellerProductDayEntry, Seller
+from datetime import datetime
+
+@login_required
+def export_load_pdf(request, seller_id, date):
+    date_obj = datetime.strptime(date, '%Y-%m-%d').date()
+    seller = get_object_or_404(Seller, id=seller_id)
+
+    entries = SellerProductDayEntry.objects.filter(seller=seller, date=date_obj).select_related('product')
+
+    for entry in entries:
+        entry.total_loaded = entry.voiture + entry.sortie
+
+    context = {
+        'seller': seller,
+        'date': date_obj,
+        'entries': entries,
+    }
+
+    template = get_template('pdf/load_report.html')
+    html = template.render(context)
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = f'filename="Chargement-{seller.name}-{date}.pdf"'
+   
+# products/views.py
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth.decorators import login_required
+from .models import Product, Seller, SellerInventory, Customer, CustomerOrder, SellerPayment
+from django.contrib import messages
+from datetime import datetime
+from django.db.models import Sum
+
+
+@login_required
+def mobile_load_inventory(request):
+    seller = get_object_or_404(Seller, user=request.user)
+    products = Product.objects.all()
+
+    if request.method == "POST":
+        for product in products:
+            qty = int(request.POST.get(f"quantity_{product.id}", 0))
+            SellerInventory.objects.update_or_create(
+                seller=seller,
+                product=product,
+                defaults={"quantity": qty}
+            )
+        messages.success(request, "Inventaire initial chargé.")
+        return redirect("products:mobile_inventory_status")
+
+    current_stock = {
+        inv.product.id: inv.quantity
+        for inv in SellerInventory.objects.filter(seller=seller)
+    }
+
+    return render(request, "mobile/load_inventory.html", {
+        "products": products,
+        "current_stock": current_stock,
+    })
+
+
+@login_required
+def mobile_unload_inventory(request):
+    seller = get_object_or_404(Seller, user=request.user)
+    products = Product.objects.all()
+
+    if request.method == "POST":
+        for product in products:
+            unload_qty = int(request.POST.get(f"unload_{product.id}", 0))
+            inventory = SellerInventory.objects.filter(seller=seller, product=product).first()
+            if inventory:
+                inventory.quantity = max(inventory.quantity - unload_qty, 0)
+                inventory.save()
+        messages.success(request, "Déchargement effectué avec succès.")
+        return redirect("products:mobile_inventory_status")
+
+    inventory_data = SellerInventory.objects.filter(seller=seller).select_related("product")
+    return render(request, "mobile/unload_inventory.html", {
+        "inventory": inventory_data
+    })
+
+
+@login_required
+def mobile_inventory_status(request):
+    seller = get_object_or_404(Seller, user=request.user)
+    inventory_data = SellerInventory.objects.filter(seller=seller).select_related("product")
+    return render(request, "mobile/inventory_status.html", {
+        "inventory": inventory_data
+    })
+
+
+@login_required
+def mobile_clients(request):
+    seller = get_object_or_404(Seller, user=request.user)
+    clients = Customer.objects.filter(seller=seller)
+    return render(request, "mobile/mobile_clients.html", {"clients": clients})
+
+
+@login_required
+def mobile_orders(request):
+    seller = get_object_or_404(Seller, user=request.user)
+    orders = CustomerOrder.objects.filter(seller=seller).select_related("customer").order_by("-date")
+    return render(request, "mobile/mobile_orders.html", {"orders": orders})
+
+
+@login_required
+def mobile_cash(request):
+    seller = get_object_or_404(Seller, user=request.user)
+    payments = SellerPayment.objects.filter(seller=seller).order_by("-date")
+    total_expected = payments.aggregate(Sum("expected_amount"))['expected_amount__sum'] or 0
+    total_paid = payments.aggregate(Sum("paid_amount"))['paid_amount__sum'] or 0
+    total_balance = total_expected - total_paid
+
+    return render(request, "mobile/mobile_cash.html", {
+        "payments": payments,
+        "total_expected": total_expected,
+        "total_paid": total_paid,
+        "total_balance": total_balance
+    })
+
+# views.py
+
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import render, redirect, get_object_or_404
+from decimal import Decimal
+from .models import Customer, Product, CustomerOrder, CustomerOrderItem
+
+@login_required
+def mobile_create_order(request):
+    seller = request.user.seller
+    customers = Customer.objects.filter(seller=seller)
+    products = Product.objects.all()
+
+    if request.method == 'POST':
+        customer_id = request.POST.get('customer_id')
+        customer = get_object_or_404(Customer, id=customer_id, seller=seller)
+
+        order = CustomerOrder.objects.create(
+            seller=seller,
+            customer=customer,
+            total_amount=0,
+        )
+
+        total = Decimal('0.00')
+
+        for product in products:
+            qty_str = request.POST.get(f'quantity_{product.id}')
+            if qty_str:
+                qty = int(qty_str)
+                if qty > 0:
+                    item = CustomerOrderItem.objects.create(
+                        order=order,
+                        product=product,
+                        quantity=qty,
+                        unit_price=product.selling_price,
+                        total_price=product.selling_price * qty
+                    )
+                    total += item.total_price
+
+        order.total_amount = total
+        order.save()
+
+        return redirect('products:mobile_order_detail', order_id=order.id)
+
+
+    return render(request, 'mobile/create_order.html', {
+        'customers': customers,
+        'products': products
+    })
+
+@login_required
+def mobile_order_detail(request, order_id):
+    order = get_object_or_404(CustomerOrder, id=order_id, seller=request.user.seller)
+    return render(request, 'mobile/order_detail.html', {
+        'order': order,
+        'items': order.items.select_related('product')
     })

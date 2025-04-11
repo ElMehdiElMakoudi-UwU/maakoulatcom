@@ -1,0 +1,42 @@
+{% extends 'mobile/base_mobile.html' %}
+{% block title %}Commande #{{ order.id }}{% endblock %}
+
+{% block content %}
+<h4>Commande #{{ order.id }}</h4>
+<p><strong>Client:</strong> {{ order.customer.name }}</p>
+<p><strong>Date:</strong> {{ order.date|date:"Y-m-d H:i" }}</p>
+<p><strong>Status:</strong> {{ order.status }}</p>
+
+<hr>
+<h5>Produits</h5>
+<table class="table table-bordered text-center">
+    <thead class="table-light">
+        <tr>
+            <th>Produit</th>
+            <th>PU</th>
+            <th>Qté</th>
+            <th>Total</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for item in items %}
+        <tr>
+            <td>{{ item.product.name }}</td>
+            <td>{{ item.unit_price }}</td>
+            <td>{{ item.quantity }}</td>
+            <td>{{ item.total_price }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<div class="text-end">
+    <strong>Total:</strong> {{ order.total_amount }} DH
+</div>
+
+<div class="mt-4 text-center">
+    <a href="{% url 'products:order_receipt' order.id %}" class="btn btn-dark w-100">
+        <i class="bi bi-printer"></i> Générer Reçu (PDF)
+    </a>
+</div>
+{% endblock %}

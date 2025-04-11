@@ -49,7 +49,7 @@
                 <th>Name</th>
                 <th>Category</th>
                 <th>Supplier</th>
-                <th>Quantity</th>
+                <th>Prix Unite</th>
                 <th>Actions</th>
             </tr>
         </thead>
@@ -60,7 +60,7 @@
                 <td>{{ product.name }}</td>
                 <td>{{ product.category }}</td>
                 <td>{{ product.supplier }}</td>
-                <td>{{ product.quantity }}</td>
+                <td>{{ product.selling_price }}</td>
                 <td>
                     <a href="{% url 'products:product_edit' product.id %}" class="btn btn-sm btn-warning">Edit</a>
                     <form method="post" action="{% url 'products:product_delete' product.id %}" style="display:inline;">
