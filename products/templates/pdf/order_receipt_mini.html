@@ -5,124 +5,53 @@
     <title>Reçu - {{ order.customer.name }}</title>
     <style>
         body {
-            width: 50mm;
             font-family: monospace;
-            font-size: 10px;
-            padding: 5px;
-            margin: 0 auto;
-            color: #000;
-        }
-
-        h2, p {
-            margin: 0;
-            padding: 0;
-            text-align: center;
-        }
-
-        hr {
-            border: 0;
-            border-top: 1px dashed #000;
-            margin: 4px 0;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 10px;
-        }
-
-        th, td {
-            text-align: left;
-            padding: 2px 0;
-        }
-
-        th {
-            font-weight: bold;
-            border-bottom: 1px dashed #000;
-        }
-
-        .totals {
-            margin-top: 5px;
-            font-weight: bold;
-            text-align: right;
-        }
-
-        .footer-note {
-            text-align: center;
-            margin-top: 10px;
-        }
-
-        button {
-            width: 100%;
-            margin: 4px 0;
-            padding: 6px;
             font-size: 12px;
+            white-space: pre;
+            padding: 10px;
         }
-
+        #receipt-content {
+            max-width: 300px;
+            margin: auto;
+        }
+        button {
+            margin: 10px;
+        }
         @media print {
             .no-print {
-                display: none !important;
-            }
-            body {
-                width: auto;
-                margin: 0;
+                display: none;
             }
         }
     </style>
 </head>
 <body>
     <div id="receipt-content">
-        <h2>🧾 Maakoulatcom</h2>
-        <p>Date: {{ order.date|date:"d/m/Y H:i" }}</p>
-        <p>Client: {{ order.customer.name }}</p>
-        <hr>
-        <table>
-            <thead>
-                <tr>
-                    <th>Produit</th>
-                    <th>Qté</th>
-                    <th>Total</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for item in order.items.all %}
-                <tr>
-                    <td>{{ item.product.name|truncatechars:12 }}</td>
-                    <td>{{ item.quantity }}</td>
-                    <td>{{ item.total_price }} DH</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-        <hr>
-        <div class="totals">Total: {{ order.total_amount }} DH</div>
-        <hr>
-        <div class="footer-note">
-            Merci pour votre achat !
-        </div>
+Maakoulatcom           
+Date: {{ order.date|date:"d/m/Y H:i" }}
+Client: {{ order.customer.name }}
+-------------------------------
+Produit                Qté Total
+-------------------------------
+{% for item in order.items.all %}
+{{ item.product.name|slice:":22"|ljust:"22" }} {{ item.quantity|stringformat:"2" }} {{ item.total_price|stringformat:".2f"|rjust:"6" }}
+{% endfor %}
+-------------------------------
+TOTAL:               {{ order.total_amount|stringformat:".2f" }} DH
+-------------------------------
+Merci pour votre achat !
     </div>
 
-    <button class="no-print" onclick="copyReceipt()">📋 Copier le reçu</button>
+    <button onclick="copyReceipt()" class="no-print">📋 Copier le reçu</button>
     <button onclick="window.print()" class="no-print">🖨️ Imprimer</button>
 
     <script>
         function copyReceipt() {
-            const receipt = document.getElementById("receipt-content");
-            if (!receipt) return;
-
-            const range = document.createRange();
-            range.selectNode(receipt);
-            window.getSelection().removeAllRanges();
-            window.getSelection().addRange(range);
-
-            try {
-                document.execCommand("copy");
-                alert("Contenu du reçu copié !");
-            } catch (err) {
-                alert("Erreur de copie.");
-            }
-
-            window.getSelection().removeAllRanges();
+            const receipt = document.getElementById("receipt-content").innerText;
+            navigator.clipboard.writeText(receipt).then(function () {
+                alert("Contenu copié dans le presse-papier !");
+            }, function () {
+                alert("Échec de la copie. Essayez manuellement.");
+            });
         }
     </script>
 </body>
