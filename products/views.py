@@ -1564,3 +1564,18 @@ def mobile_order_detail(request, order_id):
 @login_required
 def mobile_landing(request):
     return render(request, 'mobile/mobile_landing.html')
+
+
+@login_required
+def mobile_create_customer(request):
+    seller = request.user.seller
+    if request.method == 'POST':
+        name = request.POST.get('name')
+        phone = request.POST.get('phone')
+        address = request.POST.get('address')
+
+        Customer.objects.create(name=name, phone=phone, address=address, seller=seller)
+        messages.success(request, "Client ajouté avec succès.")
+        return redirect('products:mobile_clients')
+
+    return render(request, 'mobile/mobile_clients_create.html')

@@ -2,7 +2,11 @@
 {% extends 'mobile/base_mobile.html' %}
 {% block content %}
 <div class="container mt-4">
-  <h3 class="mb-3 text-center">Mes Clients</h3>
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h3 class="mb-0">Mes Clients</h3>
+    <a href="{% url 'products:mobile_create_customer' %}" class="btn btn-primary btn-sm">+ Nouveau Client</a>
+  </div>
+
   <ul class="list-group">
     {% for client in clients %}
     <li class="list-group-item d-flex justify-content-between">

@@ -66,6 +66,7 @@ urlpatterns = [
     path('mobile/inventory/unload/', views.mobile_unload_inventory, name='mobile_unload_inventory'),
     path('mobile/inventory/status/', views.mobile_inventory_status, name='mobile_inventory_status'),
     path('mobile/clients/', views.mobile_clients, name='mobile_clients'),
+    path('mobile/clients/create/', views.mobile_create_customer, name='mobile_create_customer'),
     path('mobile/orders/', views.mobile_orders, name='mobile_orders'),
     path('mobile/cash/', views.mobile_cash, name='mobile_cash'),
     path('mobile/orders/create/', views.mobile_create_order, name='mobile_create_order'),
