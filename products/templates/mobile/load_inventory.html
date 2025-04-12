@@ -1,0 +1,17 @@
+<!-- Template for load_inventory.html -->
+{% extends 'mobile/base_mobile.html' %}
+{% block content %}
+<div class="container mt-4">
+  <h3 class="mb-3 text-center">Charger Inventaire</h3>
+  <form method="post">{% csrf_token %}
+    {% for product in products %}
+    <div class="mb-3">
+      <label class="form-label">{{ product.name }}</label>
+      <input type="number" name="q_{{ product.id }}" class="form-control" min="0" value="0">
+    </div>
+    {% endfor %}
+    <button type="submit" class="btn btn-primary w-100">Charger</button>
+  </form>
+</div>
+{% endblock %}
+

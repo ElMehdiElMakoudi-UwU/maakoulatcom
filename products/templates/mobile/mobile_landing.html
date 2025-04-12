@@ -1,0 +1,35 @@
+{% extends 'mobile/base_mobile.html' %}
+{% block title %}Bienvenue{% endblock %}
+
+{% block content %}
+<div class="text-center my-4">
+    <h4 class="mb-3">👋 Bienvenue {{ request.user.seller.name }}</h4>
+    <p class="text-muted">Que voulez-vous faire aujourd'hui ?</p>
+</div>
+
+<div class="d-grid gap-3">
+    <a href="{% url 'products:mobile_clients' %}" class="btn btn-outline-primary btn-lg">
+        📇 Gérer les Clients
+    </a>
+
+    <a href="{% url 'products:mobile_orders' %}" class="btn btn-outline-success btn-lg">
+        🧾 Voir les Commandes
+    </a>
+
+    <a href="{% url 'products:mobile_cash' %}" class="btn btn-outline-warning btn-lg">
+        💵 Paiements / Caisse
+    </a>
+
+    <a href="{% url 'products:mobile_inventory_status' %}" class="btn btn-outline-dark btn-lg">
+        📦 Stock Actuel
+    </a>
+
+    <a href="{% url 'products:mobile_load_inventory' %}" class="btn btn-outline-info btn-lg">
+        ☀️ Chargement du Matin
+    </a>
+
+    <a href="{% url 'products:mobile_unload_inventory' %}" class="btn btn-outline-danger btn-lg">
+        🌙 Déchargement du Soir
+    </a>
+</div>
+{% endblock %}

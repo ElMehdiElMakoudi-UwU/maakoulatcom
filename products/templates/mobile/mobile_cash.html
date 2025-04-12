@@ -1,0 +1,27 @@
+<!-- Template for mobile_cash.html -->
+{% extends 'mobile/base_mobile.html' %}
+{% block content %}
+<div class="container mt-4">
+  <h3 class="mb-3 text-center">Caisse</h3>
+  <table class="table table-bordered">
+    <thead class="table-light">
+      <tr>
+        <th>Date</th>
+        <th>Reçu</th>
+        <th>Attendu</th>
+        <th>Différence</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for payment in payments %}
+      <tr>
+        <td>{{ payment.date|date:"d/m/Y" }}</td>
+        <td>{{ payment.paid_amount }} DH</td>
+        <td>{{ payment.expected_amount }} DH</td>
+        <td>{{ payment.balance }} DH</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

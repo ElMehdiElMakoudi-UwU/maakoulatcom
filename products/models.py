@@ -2,7 +2,20 @@ from django.db import models
 # models.py
 from django.db import models
 from django.utils.timezone import now
+from django.contrib.auth.models import User
 
+from django.db import models
+from django.utils.timezone import now
+# products/models.py
+
+from django.db import models
+from django.utils.timezone import now
+# products/forms.py
+# # products/models.py
+from django.db import models
+from django.utils.timezone import now
+from django.db import models
+from django import forms
 
 class Product(models.Model):
     CATEGORY_CHOICES = [
@@ -89,17 +102,18 @@ class InvoiceItem(models.Model):
         self.total_price = self.unit_price * self.quantity
         super().save(*args, **kwargs)
 
-from django.contrib.auth.models import User
-
 class Seller(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True)
     name = models.CharField(max_length=100)
     email = models.EmailField(unique=True)
     phone = models.CharField(max_length=15)
+    role = models.CharField(max_length=20, choices=[
+        ('seller', 'Seller'),
+        ('manager', 'Manager'),
+    ], default='seller')
 
     def __str__(self):
         return self.name
-
 
 class SellerInventory(models.Model):
     seller = models.ForeignKey(Seller, on_delete=models.CASCADE)
@@ -130,7 +144,6 @@ class UnloadingRecord(models.Model):
     def __str__(self):
         return f"{self.seller.name} returned {self.quantity} {self.product.name} on {self.date}"
 
-
 class SalesRecord(models.Model):
     seller = models.ForeignKey(Seller, on_delete=models.CASCADE)
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
@@ -141,38 +154,53 @@ class SalesRecord(models.Model):
     def __str__(self):
         return f"{self.seller.name} sold {self.quantity_sold} {self.product.name} on {self.date}"
 
-
-from django.db import models
-from django.utils.timezone import now
+from django.contrib.auth.models import User  # already present
 
 class SellerProductDayEntry(models.Model):
     seller = models.ForeignKey('Seller', on_delete=models.CASCADE)
     product = models.ForeignKey('Product', on_delete=models.CASCADE)
     date = models.DateField(default=now)
-    
-    voiture = models.IntegerField(default=0)  # Remaining from yesterday
-    sortie = models.IntegerField(default=0)   # Taken from warehouse
-    retour = models.IntegerField(default=0)   # Returned to warehouse
 
-    vendu = models.IntegerField(default=0)    # Computed field: voiture + sortie - retour
-    amount = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)  # vendu * selling_price
+    voiture = models.IntegerField(default=0)
+    sortie = models.IntegerField(default=0)
+    retour = models.IntegerField(default=0)
+
+    vendu = models.IntegerField(default=0)
+    amount = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
 
     class Meta:
         unique_together = ('seller', 'product', 'date')
 
     def save(self, *args, **kwargs):
+        is_new = self.pk is None
+        previous_vendu = 0
+
+        if not is_new:
+            previous = SellerProductDayEntry.objects.get(pk=self.pk)
+            previous_vendu = previous.vendu
+
         self.vendu = self.voiture + self.sortie - self.retour
         self.amount = self.vendu * self.product.selling_price
+
+        vendu_diff = self.vendu - previous_vendu
+
         super().save(*args, **kwargs)
+
+        if vendu_diff != 0:
+            self.product.quantity = max(self.product.quantity - vendu_diff, 0)
+            self.product.save()
+
+            # Import here to avoid circular import issues
+            from .models import StockMovement
+            StockMovement.objects.create(
+                product=self.product,
+                type="unload",
+                quantity=-vendu_diff,
+                notes=f"Auto-stock deduction after unload for seller {self.seller.name} on {self.date}"
+            )
 
     def __str__(self):
         return f"{self.date} - {self.seller.name} - {self.product.name}"
-
-
-# products/models.py
-
-from django.db import models
-from django.utils.timezone import now
 
 class DailySellerStockRecord(models.Model):
     seller = models.ForeignKey('Seller', on_delete=models.CASCADE)
@@ -194,10 +222,6 @@ class DailySellerStockRecord(models.Model):
     def __str__(self):
         return f"{self.date} | {self.seller.name} | {self.product.name} : vendu {self.vendu}"
 
-# products/forms.py
-from django import forms
-from .models import DailySellerStockRecord
-
 class DailySellerStockForm(forms.ModelForm):
     class Meta:
         model = DailySellerStockRecord
@@ -205,11 +229,6 @@ class DailySellerStockForm(forms.ModelForm):
         widgets = {
             'date': forms.DateInput(attrs={'type': 'date'}),
         }
-
-# products/models.py
-from django.db import models
-from django.utils.timezone import now
-from .models import Seller
 
 class SellerPayment(models.Model):
     seller = models.ForeignKey(Seller, on_delete=models.CASCADE)
@@ -227,8 +246,6 @@ class SellerPayment(models.Model):
 
     def __str__(self):
         return f"{self.seller.name} - {self.date}"
-
-from django.db import models
 
 class Customer(models.Model):
     name = models.CharField(max_length=100)
@@ -263,3 +280,23 @@ class CustomerOrderItem(models.Model):
 
     def __str__(self):
         return f"{self.product.name} x{self.quantity} = {self.total_price} DH"
+
+class StockMovement(models.Model):
+    MOVEMENT_TYPES = [
+        ("restock", "Restock"),
+        ("sale", "Sale"),
+        ("return", "Return"),
+        ("manual", "Manual Adjustment"),
+        ("load", "Chargement"),
+        ("unload", "Déchargement"),
+    ]
+
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    type = models.CharField(max_length=20, choices=MOVEMENT_TYPES)
+    quantity = models.IntegerField()
+    date = models.DateTimeField(auto_now_add=True)
+    related_user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    notes = models.TextField(blank=True)
+
+    def __str__(self):
+        return f"{self.date.strftime('%Y-%m-%d %H:%M')} - {self.product.name} ({self.get_type_display()})"
