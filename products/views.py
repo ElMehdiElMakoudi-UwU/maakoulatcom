@@ -1312,7 +1312,7 @@ def order_create(request, customer_id):
 
 @login_required
 def order_detail(request, order_id):
-    order = get_object_or_404(CustomerOrder, id=order_id, seller=request.user.seller)
+    order = get_object_or_404(CustomerOrder, id=order_id)
     return render(request, "sales/order_detail.html", {"order": order})
 
 
