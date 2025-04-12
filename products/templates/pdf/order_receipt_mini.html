@@ -5,17 +5,24 @@
     <title>Reçu - {{ order.customer.name }}</title>
     <style>
         body {
+            width: 58mm;
             font-family: monospace;
-            font-size: 12px;
-            white-space: pre;
-            padding: 10px;
+            font-size: 11px;
+            white-space: pre-wrap;
         }
-        #receipt-content {
-            max-width: 300px;
-            margin: auto;
+        h2, p {
+            margin: 0;
+            text-align: center;
         }
-        button {
-            margin: 10px;
+        .receipt-line {
+            border-top: 1px dashed #000;
+            margin: 6px 0;
+        }
+        .item {
+            margin-bottom: 8px;
+        }
+        .no-print {
+            margin-top: 15px;
         }
         @media print {
             .no-print {
@@ -25,34 +32,46 @@
     </style>
 </head>
 <body>
-    <div id="receipt-content">
-Maakoulatcom           
-Date: {{ order.date|date:"d/m/Y H:i" }}
-Client: {{ order.customer.name }}
--------------------------------
-Produit                Qté Total
--------------------------------
-{% for item in order.items.all %}
-{{ item.product.name|slice:":22"|ljust:"22" }} {{ item.quantity|stringformat:"2" }} {{ item.total_price|stringformat:".2f"|rjust:"6" }}
-{% endfor %}
--------------------------------
-TOTAL:               {{ order.total_amount|stringformat:".2f" }} DH
--------------------------------
-Merci pour votre achat !
-    </div>
+<div id="receipt-content">
+    <h2>Maakoulatcom</h2>
+    Date: {{ order.date|date:"d/m/Y H:i" }}
+    Client: {{ order.customer.name }}
+    <div class="receipt-line"></div>
+    <strong>Produit</strong>
+    {% for item in order.items.all %}
+        {{ item.product.name }}
+        Qté: {{ item.quantity }}{{ " "|safe }}{{ item.total_price|stringformat:"6.2f" }} DH
+    {% endfor %}
+    <div class="receipt-line"></div>
+    <strong>TOTAL:{{ " "|safe }}{{ order.total_amount|stringformat:"6.2f" }} DH</strong>
+    <div class="receipt-line"></div>
+    Merci pour votre achat !
+</div>
 
-    <button onclick="copyReceipt()" class="no-print">📋 Copier le reçu</button>
-    <button onclick="window.print()" class="no-print">🖨️ Imprimer</button>
+<div class="no-print">
+    <button onclick="copyReceipt()">📋 Copier le reçu</button>
+    <button onclick="window.print()">Imprimer</button>
+</div>
 
-    <script>
-        function copyReceipt() {
-            const receipt = document.getElementById("receipt-content").innerText;
-            navigator.clipboard.writeText(receipt).then(function () {
-                alert("Contenu copié dans le presse-papier !");
-            }, function () {
-                alert("Échec de la copie. Essayez manuellement.");
-            });
+<script>
+    function copyReceipt() {
+        const receipt = document.getElementById("receipt-content");
+        if (!receipt) return;
+
+        const range = document.createRange();
+        range.selectNode(receipt);
+        window.getSelection().removeAllRanges();
+        window.getSelection().addRange(range);
+
+        try {
+            document.execCommand("copy");
+            alert("Contenu copié !");
+        } catch (err) {
+            alert("Erreur lors de la copie.");
         }
-    </script>
+
+        window.getSelection().removeAllRanges();
+    }
+</script>
 </body>
 </html>
