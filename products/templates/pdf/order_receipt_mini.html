@@ -30,31 +30,56 @@
     </style>
 </head>
 <body>
-    <h2>Maakoulatcom</h2>
-    <p>Date: {{ order.date|date:"d/m/Y" }}</p>
-    <p>Client: {{ order.customer.name }}</p>
-    <hr>
-    <table>
-        <thead>
-            <tr>
-                <th>Produit</th>
-                <th>Qté</th>
-                <th>Total</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for item in order.items.all %}
-            <tr>
-                <td>{{ item.product.name }}</td>
-                <td>{{ item.quantity }}</td>
-                <td>{{ item.total_price }} DH</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-    <hr>
-    <p><strong>Total: {{ order.total_amount }} DH</strong></p>
-
+    <div id="receipt-content">
+        <h2>Maakoulatcom</h2>
+        <p>Date: {{ order.date|date:"d/m/Y" }}</p>
+        <p>Client: {{ order.customer.name }}</p>
+        <hr>
+        <table>
+            <thead>
+                <tr>
+                    <th>Produit</th>
+                    <th>Qté</th>
+                    <th>Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in order.items.all %}
+                <tr>
+                    <td>{{ item.product.name }}</td>
+                    <td>{{ item.quantity }}</td>
+                    <td>{{ item.total_price }} DH</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <hr>
+        <p><strong>Total: {{ order.total_amount }} DH</strong></p>
+    </div>
+      
+    <button class="btn btn-primary my-3" onclick="copyReceipt()">📋 Copier le reçu</button>
     <button onclick="window.print()" class="no-print">Imprimer</button>
+
+    <script>
+        function copyReceipt() {
+            const receipt = document.getElementById("receipt-content");
+            if (!receipt) return;
+        
+            const range = document.createRange();
+            range.selectNode(receipt);
+            window.getSelection().removeAllRanges(); // clear previous selection
+            window.getSelection().addRange(range);
+        
+            try {
+                document.execCommand("copy");
+                alert("Contenu du reçu copié dans le presse-papier !");
+            } catch (err) {
+                alert("La copie a échoué. Essayez manuellement.");
+            }
+        
+            window.getSelection().removeAllRanges();
+        }
+    </script>
+        
 </body>
 </html>
