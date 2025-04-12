@@ -5,34 +5,75 @@
     <title>Reçu - {{ order.customer.name }}</title>
     <style>
         body {
-            width: 58mm;
+            width: 50mm;
             font-family: monospace;
+            font-size: 10px;
+            padding: 5px;
+            margin: 0 auto;
+            color: #000;
         }
+
         h2, p {
             margin: 0;
             padding: 0;
             text-align: center;
         }
+
+        hr {
+            border: 0;
+            border-top: 1px dashed #000;
+            margin: 4px 0;
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 11px;
+            font-size: 10px;
         }
+
         th, td {
             text-align: left;
+            padding: 2px 0;
         }
+
+        th {
+            font-weight: bold;
+            border-bottom: 1px dashed #000;
+        }
+
         .totals {
+            margin-top: 5px;
+            font-weight: bold;
+            text-align: right;
+        }
+
+        .footer-note {
+            text-align: center;
             margin-top: 10px;
         }
+
+        button {
+            width: 100%;
+            margin: 4px 0;
+            padding: 6px;
+            font-size: 12px;
+        }
+
         @media print {
-            .no-print { display: none; }
+            .no-print {
+                display: none !important;
+            }
+            body {
+                width: auto;
+                margin: 0;
+            }
         }
     </style>
 </head>
 <body>
     <div id="receipt-content">
-        <h2>Maakoulatcom</h2>
-        <p>Date: {{ order.date|date:"d/m/Y" }}</p>
+        <h2>🧾 Maakoulatcom</h2>
+        <p>Date: {{ order.date|date:"d/m/Y H:i" }}</p>
         <p>Client: {{ order.customer.name }}</p>
         <hr>
         <table>
@@ -46,7 +87,7 @@
             <tbody>
                 {% for item in order.items.all %}
                 <tr>
-                    <td>{{ item.product.name }}</td>
+                    <td>{{ item.product.name|truncatechars:12 }}</td>
                     <td>{{ item.quantity }}</td>
                     <td>{{ item.total_price }} DH</td>
                 </tr>
@@ -54,32 +95,35 @@
             </tbody>
         </table>
         <hr>
-        <p><strong>Total: {{ order.total_amount }} DH</strong></p>
+        <div class="totals">Total: {{ order.total_amount }} DH</div>
+        <hr>
+        <div class="footer-note">
+            Merci pour votre achat !
+        </div>
     </div>
-      
-    <button class="btn btn-primary my-3" onclick="copyReceipt()">📋 Copier le reçu</button>
-    <button onclick="window.print()" class="no-print">Imprimer</button>
+
+    <button class="no-print" onclick="copyReceipt()">📋 Copier le reçu</button>
+    <button onclick="window.print()" class="no-print">🖨️ Imprimer</button>
 
     <script>
         function copyReceipt() {
             const receipt = document.getElementById("receipt-content");
             if (!receipt) return;
-        
+
             const range = document.createRange();
             range.selectNode(receipt);
-            window.getSelection().removeAllRanges(); // clear previous selection
+            window.getSelection().removeAllRanges();
             window.getSelection().addRange(range);
-        
+
             try {
                 document.execCommand("copy");
-                alert("Contenu du reçu copié dans le presse-papier !");
+                alert("Contenu du reçu copié !");
             } catch (err) {
-                alert("La copie a échoué. Essayez manuellement.");
+                alert("Erreur de copie.");
             }
-        
+
             window.getSelection().removeAllRanges();
         }
     </script>
-        
 </body>
 </html>
