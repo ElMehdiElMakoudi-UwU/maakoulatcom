@@ -60,6 +60,8 @@ urlpatterns = [
     path('orders/<int:order_id>/receipt/', views.order_receipt, name='order_receipt'),
     path('load-report/<int:seller_id>/<str:date>/', views.export_load_pdf, name='export_loading_pdf'),
     # Mobile pages : 
+    # urls.py
+    path('mobile/', views.mobile_landing, name='mobile_landing'),
     path('mobile/inventory/load/', views.mobile_load_inventory, name='mobile_load_inventory'),
     path('mobile/inventory/unload/', views.mobile_unload_inventory, name='mobile_unload_inventory'),
     path('mobile/inventory/status/', views.mobile_inventory_status, name='mobile_inventory_status'),
@@ -68,5 +70,8 @@ urlpatterns = [
     path('mobile/cash/', views.mobile_cash, name='mobile_cash'),
     path('mobile/orders/create/', views.mobile_create_order, name='mobile_create_order'),
     path('mobile/orders/<int:order_id>/', views.mobile_order_detail, name='mobile_order_detail'),
+    # urls.py
+    path('accounts/profile/', views.post_login_redirect, name='post_login_redirect'),
+
 
 ]

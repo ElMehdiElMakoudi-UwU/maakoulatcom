@@ -35,6 +35,24 @@ from django.utils.timezone import now
 from django.shortcuts import render
 from .models import SalesEntry
 
+# views.py
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import redirect
+
+@login_required
+def post_login_redirect(request):
+    user = request.user
+
+    if hasattr(user, 'seller'):
+        role = getattr(user.seller, 'role', None)
+        if role == 'seller':
+            return redirect('products:mobile_landing')  # NOT 'mobile_clients'
+        elif role == 'manager':
+            return redirect('products:metrics_dashboard')
+
+    return redirect('products:metrics_dashboard')  # fallback
+
+@login_required
 def product_form(request):
     if request.method == 'POST':
         form = ProductForm(request.POST)
@@ -45,6 +63,7 @@ def product_form(request):
         form = ProductForm()
     return render(request, 'products/product_form.html', {'form': form})
 
+@login_required
 def product_list(request):
     # Get query parameters for filtering
     category = request.GET.get('category')
@@ -69,6 +88,7 @@ def product_list(request):
         'selected_supplier': supplier,
     })
 
+@login_required
 def product_edit(request, product_id):
     product = get_object_or_404(Product, id=product_id)
     if request.method == 'POST':
@@ -80,6 +100,7 @@ def product_edit(request, product_id):
         form = ProductForm(instance=product)
     return render(request, 'products/product_edit.html', {'form': form, 'product': product})
 
+@login_required
 def product_delete(request, product_id):
     product = get_object_or_404(Product, id=product_id)
     if request.method == 'POST':
@@ -87,6 +108,8 @@ def product_delete(request, product_id):
         return redirect('products:product_list')
     return render(request, 'products/product_confirm_delete.html', {'product': product})
 
+
+@login_required
 def inventory_entry(request):
     if request.method == 'POST':
         form = InventoryEntryForm(request.POST)
@@ -103,6 +126,7 @@ def inventory_entry(request):
     entries = InventoryEntry.objects.all().order_by('-date')
     return render(request, 'inventory/inventory_entry.html', {'form': form, 'entries': entries})
 
+@login_required
 def sales_entry(request):
     if request.method == 'POST':
         form = SalesEntryForm(request.POST)
@@ -116,10 +140,12 @@ def sales_entry(request):
     sales = SalesEntry.objects.all().order_by('-date')
     return render(request, 'inventory/inventory_sales.html', {'form': form, 'sales': sales})
 
+@login_required
 def inventory_entries(request):
     entries = InventoryEntry.objects.all().order_by('-date')
     return render(request, 'inventory/inventory_entries.html', {'entries': entries})
 
+@login_required
 def edit_inventory_entry(request, entry_id):
     entry = get_object_or_404(InventoryEntry, id=entry_id)
     if request.method == 'POST':
@@ -132,6 +158,7 @@ def edit_inventory_entry(request, entry_id):
         form = InventoryEntryForm(instance=entry)
     return render(request, 'inventory/edit_inventory_entry.html', {'form': form, 'entry': entry})
 
+@login_required
 def delete_inventory_entry(request, entry_id):
     entry = get_object_or_404(InventoryEntry, id=entry_id)
     if request.method == 'POST':
@@ -140,10 +167,12 @@ def delete_inventory_entry(request, entry_id):
         return redirect('products:inventory_entries')
     return render(request, 'inventory/delete_inventory_entry.html', {'entry': entry})
 
+@login_required
 def sales_entries(request):
     sales = SalesEntry.objects.all().order_by('-date')
     return render(request, 'inventory/sales_entries.html', {'sales': sales})
 
+@login_required
 def edit_sales_entry(request, sale_id):
     sale = get_object_or_404(SalesEntry, id=sale_id)
     if request.method == 'POST':
@@ -156,6 +185,7 @@ def edit_sales_entry(request, sale_id):
         form = SalesEntryForm(instance=sale)
     return render(request, 'inventory/edit_sales_entry.html', {'form': form, 'sale': sale})
 
+@login_required
 def delete_sales_entry(request, sale_id):
     sale = get_object_or_404(SalesEntry, id=sale_id)
     if request.method == 'POST':
@@ -164,6 +194,7 @@ def delete_sales_entry(request, sale_id):
         return redirect('inventory:sales_entries')
     return render(request, 'inventory/delete_sales_entry.html', {'sale': sale})
 
+@login_required
 def inventory_status(request):
     # Get filter parameters
     category_filter = request.GET.get('category')
@@ -194,6 +225,7 @@ def inventory_status(request):
         'selected_supplier': supplier_filter,
     })
 
+@login_required
 def dashboard(request):
     total_products = Product.objects.count()
     total_stock_value = Product.objects.aggregate(
@@ -217,6 +249,7 @@ def dashboard(request):
     }
     return render(request, 'inventory/dashboard.html', context)
 
+@login_required
 def bulk_operations(request):
     if request.method == 'POST':
         operation = request.POST.get('operation')  # Get selected operation (sales or entry)
@@ -245,6 +278,7 @@ def bulk_operations(request):
         'products_by_category': products_by_category
     })
 
+@login_required
 def generate_order_number():
     current_year = now().year % 100  # Get the last two digits of the current year, e.g., 2025 -> 25
 
@@ -265,6 +299,7 @@ def generate_order_number():
     # Format the order number as BCXXXX/YY
     return f"BC{next_number:04d}/{current_year}"
 
+@login_required
 def reorder_page(request):
     if request.method == 'POST':
         # Get supplier and order data from the request
@@ -309,6 +344,7 @@ def reorder_page(request):
 
     return render(request, 'products/reorder_page.html', {'products': Product.objects.all()})
 
+@login_required
 def generate_pdf(template_path, context):
     template = render_to_string(template_path, context)
     pdf_file = BytesIO()
@@ -316,6 +352,7 @@ def generate_pdf(template_path, context):
     pdf_file.seek(0)
     return HttpResponse(pdf_file, content_type='application/pdf')
 
+@login_required
 def order_list(request):
     query = request.GET.get('search', '')  # Get the search query from the request
     if query:
@@ -325,10 +362,12 @@ def order_list(request):
 
     return render(request, 'products/order_list.html', {'orders': orders, 'search_query': query})
 
+@login_required
 def order_details(request, order_id):
     order = get_object_or_404(Order, id=order_id)
     return render(request, 'products/order_details.html', {'order': order})
 
+@login_required
 def order_edit(request, order_id):
     order = get_object_or_404(Order, id=order_id)
 
@@ -340,6 +379,7 @@ def order_edit(request, order_id):
 
     return render(request, 'products/order_edit.html', {'order': order})
 
+@login_required
 def order_delete(request, order_id):
     order = get_object_or_404(Order, id=order_id)
 
@@ -349,6 +389,7 @@ def order_delete(request, order_id):
 
     return render(request, 'products/order_confirm_delete.html', {'order': order})
 
+@login_required
 def import_products_from_csv(request):
     if request.method == 'POST' and request.FILES.get('csv_file'):
         csv_file = request.FILES['csv_file']
@@ -384,6 +425,7 @@ def import_products_from_csv(request):
     # Render the upload page for GET requests
     return render(request, 'products/import_products.html')
 
+@login_required
 def export_inventory_to_pdf(request):
     category = request.GET.get('category')
     supplier = request.GET.get('supplier')
@@ -414,10 +456,12 @@ def export_inventory_to_pdf(request):
         return HttpResponse('Error generating PDF', content_type='text/plain')
     return response
 
+@login_required
 def invoice_list(request):
     invoices = Invoice.objects.all().order_by('-date')
     return render(request, 'products/invoice_list.html', {'invoices': invoices})
 
+@login_required
 def new_invoice(request):
     if request.method == 'POST':
         client = request.POST.get('client')
@@ -454,6 +498,7 @@ def new_invoice(request):
 
     return render(request, 'products/new_invoice.html', {'products_by_category': products_by_category})
 
+@login_required
 def invoice_details(request, invoice_id):
     invoice = get_object_or_404(Invoice, id=invoice_id)
     items = InvoiceItem.objects.filter(invoice=invoice)
@@ -463,6 +508,7 @@ def invoice_details(request, invoice_id):
         'items': items
     })
 
+@login_required
 def edit_invoice(request, invoice_id):
     invoice = get_object_or_404(Invoice, id=invoice_id)
 
@@ -491,6 +537,7 @@ def edit_invoice(request, invoice_id):
         'items': items
     })
 
+@login_required
 def delete_invoice(request, invoice_id):
     invoice = get_object_or_404(Invoice, id=invoice_id)
 
@@ -503,6 +550,7 @@ def delete_invoice(request, invoice_id):
         'invoice': invoice
     })
 
+@login_required
 def load_inventory(request):
     if request.method == 'POST':
         seller_id = request.POST.get('seller')
@@ -532,6 +580,7 @@ def load_inventory(request):
     products = Product.objects.all()
     return render(request, 'inventory/load_inventory.html', {'sellers': sellers, 'products': products})
 
+@login_required
 def unload_inventory(request):
     seller_id = request.GET.get('seller') or request.POST.get('seller')  # Ensure we get seller from GET or POST
     seller_inventory = []
@@ -597,6 +646,7 @@ def unload_inventory(request):
         'selected_seller_id': seller_id  # Ensure seller remains selected
     })
 
+@login_required
 def sales_report(request):
     selected_date = request.GET.get('date', now().date())
 
@@ -612,6 +662,7 @@ def sales_report(request):
         'selected_date': selected_date
     })
 
+@login_required
 def sale_details(request, sale_id):
     sale = get_object_or_404(SalesEntry, id=sale_id)
     total_amount = sale.quantity * sale.product.selling_price  # Calculate total
@@ -624,6 +675,7 @@ def sale_details(request, sale_id):
 from django.shortcuts import render, get_object_or_404
 from .models import Seller, LoadingRecord, UnloadingRecord
 
+@login_required
 def manager_inventory(request):
     seller_id = request.GET.get("seller")
     selected_seller = None
@@ -669,6 +721,7 @@ from django.template.loader import get_template
 from django.http import HttpResponse
 from xhtml2pdf import pisa
 
+@login_required
 def load_new_inventory(request):
     sellers = Seller.objects.all()
     products = Product.objects.all()
@@ -752,7 +805,7 @@ from .models import Seller, Product, SellerProductDayEntry
 
 from django.urls import reverse
 
-
+@login_required
 def unload_new_inventory(request):
     seller_id = request.GET.get("seller")
     date_str = request.GET.get("date")
@@ -808,6 +861,7 @@ from .models import DailySellerStockRecord, Seller, Product
 from django.utils.timezone import now
 from datetime import datetime
 
+@login_required
 def daily_seller_stock(request):
     # Parse date (default today)
     date_str = request.GET.get('date')
@@ -875,6 +929,7 @@ def daily_seller_stock(request):
 from django.db.models import Sum
 from django.utils.timezone import now
 
+@login_required
 def daily_sales_summary(request):
     start_date = request.GET.get('start_date')
     end_date = request.GET.get('end_date')
@@ -902,6 +957,7 @@ def daily_sales_summary(request):
         'end_date': end_date
     })
 
+@login_required
 def daily_sales_detail(request, seller_id, date):
     seller = get_object_or_404(Seller, id=seller_id)
     entries = SellerProductDayEntry.objects.filter(seller=seller, date=date).select_related('product')
@@ -919,6 +975,7 @@ from .models import SellerProductDayEntry, Seller
 from datetime import datetime
 from django.shortcuts import get_object_or_404
 
+@login_required
 def export_unload_pdf(request, seller_id, date):
     date_obj = datetime.strptime(date, '%Y-%m-%d').date()
     seller = get_object_or_404(Seller, id=seller_id)
@@ -966,7 +1023,7 @@ from .models import Product, SellerProductDayEntry, Seller
 from django.db.models import Sum, F
 from django.db.models.functions import TruncMonth
 
-
+@login_required
 def metrics_dashboard(request):
     today = now().date()
 
@@ -1026,6 +1083,8 @@ from datetime import datetime
 from django.db.models import Sum
 from .models import Seller, SellerProductDayEntry, SellerPayment
 
+
+@login_required
 def seller_payment_entry(request):
     seller_id = request.GET.get("seller")
     date_str = request.GET.get("date")
@@ -1075,6 +1134,7 @@ from django.db.models import Sum, F, ExpressionWrapper, DecimalField, Max
 from django.shortcuts import render
 from .models import SellerPayment
 
+@login_required
 def unpaid_balances_report(request):
     unpaid_summary = (
         SellerPayment.objects
@@ -1103,6 +1163,7 @@ from .models import Seller, SellerPayment, SellerProductDayEntry
 from django.db.models import Sum
 from datetime import datetime
 
+@login_required
 def seller_payment_history(request):
     seller_id = request.GET.get('seller')
     seller = get_object_or_404(Seller, id=seller_id) if seller_id else None
@@ -1291,6 +1352,7 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from django.utils.dateparse import parse_date
 
+@login_required
 def customer_order_list(request):
     sellers = Seller.objects.all()
     customers = Customer.objects.all()
@@ -1497,3 +1559,8 @@ def mobile_order_detail(request, order_id):
         'order': order,
         'items': order.items.select_related('product')
     })
+
+# views.py
+@login_required
+def mobile_landing(request):
+    return render(request, 'mobile/mobile_landing.html')

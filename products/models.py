@@ -107,6 +107,10 @@ class Seller(models.Model):
     name = models.CharField(max_length=100)
     email = models.EmailField(unique=True)
     phone = models.CharField(max_length=15)
+    role = models.CharField(max_length=20, choices=[
+        ('seller', 'Seller'),
+        ('manager', 'Manager'),
+    ], default='seller')
 
     def __str__(self):
         return self.name
@@ -150,10 +154,6 @@ class SalesRecord(models.Model):
     def __str__(self):
         return f"{self.seller.name} sold {self.quantity_sold} {self.product.name} on {self.date}"
 
-# products/models.py
-
-# products/models.py
-
 from django.contrib.auth.models import User  # already present
 
 class SellerProductDayEntry(models.Model):
@@ -171,33 +171,33 @@ class SellerProductDayEntry(models.Model):
     class Meta:
         unique_together = ('seller', 'product', 'date')
 
-def save(self, *args, **kwargs):
-    is_new = self.pk is None
-    previous_vendu = 0
+    def save(self, *args, **kwargs):
+        is_new = self.pk is None
+        previous_vendu = 0
 
-    if not is_new:
-        previous = SellerProductDayEntry.objects.get(pk=self.pk)
-        previous_vendu = previous.vendu
+        if not is_new:
+            previous = SellerProductDayEntry.objects.get(pk=self.pk)
+            previous_vendu = previous.vendu
 
-    self.vendu = self.voiture + self.sortie - self.retour
-    self.amount = self.vendu * self.product.selling_price
+        self.vendu = self.voiture + self.sortie - self.retour
+        self.amount = self.vendu * self.product.selling_price
 
-    vendu_diff = self.vendu - previous_vendu
+        vendu_diff = self.vendu - previous_vendu
 
-    super().save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
-    if vendu_diff != 0:
-        self.product.quantity = max(self.product.quantity - vendu_diff, 0)
-        self.product.save()
+        if vendu_diff != 0:
+            self.product.quantity = max(self.product.quantity - vendu_diff, 0)
+            self.product.save()
 
-        # Import here to avoid circular import issues
-        from .models import StockMovement
-        StockMovement.objects.create(
-            product=self.product,
-            type="unload",
-            quantity=-vendu_diff,
-            notes=f"Auto-stock deduction after unload for seller {self.seller.name} on {self.date}"
-        )
+            # Import here to avoid circular import issues
+            from .models import StockMovement
+            StockMovement.objects.create(
+                product=self.product,
+                type="unload",
+                quantity=-vendu_diff,
+                notes=f"Auto-stock deduction after unload for seller {self.seller.name} on {self.date}"
+            )
 
     def __str__(self):
         return f"{self.date} - {self.seller.name} - {self.product.name}"
