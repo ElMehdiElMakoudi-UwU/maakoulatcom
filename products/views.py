@@ -1,43 +1,35 @@
+# ==============================
+# ✅ CLEANED IMPORTS
+# ==============================
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponse
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 from django.db import transaction, IntegrityError
-from django.db.models import Sum, Max, Q
-from django.utils.timezone import now
-from django.template.loader import render_to_string
-from xhtml2pdf import pisa
+from django.db.models import Sum, Max, Q, F, ExpressionWrapper, DecimalField
+from django.utils.timezone import now, localdate
+from django.urls import reverse
+from django.template.loader import render_to_string, get_template
+from django.core.exceptions import ObjectDoesNotExist
+
+from decimal import Decimal
+from datetime import datetime, timedelta
 from io import BytesIO
 import csv
-import uuid
-from .models import Product, InventoryEntry, SalesEntry, Order
-from .forms import ProductForm, InventoryEntryForm, SalesEntryForm
-from django.shortcuts import render, get_object_or_404, redirect
-from django.contrib import messages
-from .models import Invoice, InvoiceItem, Product, Seller, SellerInventory, LoadingRecord, UnloadingRecord
-from .forms import InvoiceForm, InvoiceItemForm
-from django.db import transaction
-from django.shortcuts import render, get_object_or_404, redirect
-from .models import Invoice, Product, InvoiceItem
-from .forms import InvoiceForm, InvoiceItemForm
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib import messages
-from .models import Seller, SellerInventory, UnloadingRecord, Product, SalesRecord
 
-from django.db.models import Sum
-from django.utils.timezone import now
+from xhtml2pdf import pisa
 
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib import messages
-from django.utils.timezone import now
-from .models import Seller, SellerInventory, UnloadingRecord, SalesRecord, Product
-from django.db.models import Sum
-from django.utils.timezone import now
-from django.shortcuts import render
-from .models import SalesEntry
+from .models import (
+    Product, InventoryEntry, SalesEntry, Order, Invoice, InvoiceItem,
+    Seller, SellerInventory, LoadingRecord, UnloadingRecord,
+    SellerProductDayEntry, DailySellerStockRecord, SellerPayment,
+    Customer, CustomerOrder, CustomerOrderItem, SalesRecord
+)
 
-# views.py
-from django.contrib.auth.decorators import login_required
-from django.shortcuts import redirect
+from .forms import (
+    ProductForm, InventoryEntryForm, SalesEntryForm,
+    InvoiceForm, InvoiceItemForm
+)
 
 @login_required
 def post_login_redirect(request):
@@ -672,9 +664,6 @@ def sale_details(request, sale_id):
         'total_amount': total_amount
     })
 
-from django.shortcuts import render, get_object_or_404
-from .models import Seller, LoadingRecord, UnloadingRecord
-
 @login_required
 def manager_inventory(request):
     seller_id = request.GET.get("seller")
@@ -697,29 +686,6 @@ def manager_inventory(request):
         "selected_seller": selected_seller,
         "unique_dates": unique_dates,
     })
-
-
-# views.py
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib import messages
-from django.utils.timezone import now
-from .models import Seller, Product, SellerProductDayEntry
-from datetime import timedelta
-from django.db.models import Q
-
-
-from datetime import datetime
-
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib import messages
-from django.utils.timezone import now
-from datetime import datetime, timedelta
-from .models import Seller, Product, SellerProductDayEntry
-
-
-from django.template.loader import get_template
-from django.http import HttpResponse
-from xhtml2pdf import pisa
 
 @login_required
 def load_new_inventory(request):
@@ -759,13 +725,14 @@ def load_new_inventory(request):
                 )
                 entry.total_loaded = voiture_qty + sortie_qty
                 entries.append(entry)
+            filtered_entries = [entry for entry in entries if entry.total_loaded > 0]
 
             # Generate PDF
             template = get_template('pdf/load_report.html')
             html = template.render({
                 'seller': selected_seller,
                 'date': selected_date,
-                'entries': entries,
+                'entries': filtered_entries,
             })
 
             response = HttpResponse(content_type='application/pdf')
@@ -780,30 +747,6 @@ def load_new_inventory(request):
         'selected_seller_id': selected_seller_id,
         'selected_date': selected_date.strftime('%Y-%m-%d'),
     })
-
-# views.py (continued)
-from django.utils.timezone import localdate
-from .models import Seller, Product, SellerInventory, UnloadingRecord, LoadingRecord
-
-
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib import messages
-from django.utils.timezone import localdate
-from datetime import timedelta
-from .models import Seller, Product, SellerProductDayEntry
-
-
-# views.py
-from django.utils.timezone import now
-
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib import messages
-from django.utils.timezone import now
-from datetime import datetime, timedelta
-from .models import Seller, Product, SellerProductDayEntry
-
-
-from django.urls import reverse
 
 @login_required
 def unload_new_inventory(request):
@@ -853,13 +796,6 @@ def unload_new_inventory(request):
         "voiture": voiture_quantities,
         "sortie": sortie_quantities,
     })
-
-# views.py
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib import messages
-from .models import DailySellerStockRecord, Seller, Product
-from django.utils.timezone import now
-from datetime import datetime
 
 @login_required
 def daily_seller_stock(request):
@@ -926,9 +862,6 @@ def daily_seller_stock(request):
         'selected_date': selected_date
     })
 
-from django.db.models import Sum
-from django.utils.timezone import now
-
 @login_required
 def daily_sales_summary(request):
     start_date = request.GET.get('start_date')
@@ -967,13 +900,6 @@ def daily_sales_detail(request, seller_id, date):
         'date': date,
         'entries': entries,
     })
-
-from django.http import HttpResponse
-from django.template.loader import get_template
-from xhtml2pdf import pisa
-from .models import SellerProductDayEntry, Seller
-from datetime import datetime
-from django.shortcuts import get_object_or_404
 
 @login_required
 def export_unload_pdf(request, seller_id, date):
@@ -1014,74 +940,60 @@ def export_unload_pdf(request, seller_id, date):
     return response
 
 
-# products/views.py
-
-from django.shortcuts import render
-from django.utils.timezone import now
-from datetime import timedelta
-from .models import Product, SellerProductDayEntry, Seller
-from django.db.models import Sum, F
-from django.db.models.functions import TruncMonth
-
 @login_required
 def metrics_dashboard(request):
     today = now().date()
 
     total_products = Product.objects.count()
     low_stock_products = Product.objects.filter(quantity__lte=10)
-    low_stock_count = low_stock_products.count()  # ✅ Fix 1
+    low_stock_count = low_stock_products.count()
 
-    today_sales = SellerProductDayEntry.objects.filter(date=today)
-    total_quantity_sold = today_sales.aggregate(qty=Sum('vendu'))['qty'] or 0
-    total_amount = today_sales.aggregate(amount=Sum('amount'))['amount'] or 0
+    today_entries = SellerProductDayEntry.objects.filter(date=today)
+
+    total_retour = today_entries.aggregate(r=Sum('retour'))['r'] or 0
+    total_loaded = today_entries.aggregate(
+        loaded=Sum(F('voiture') + F('sortie'))
+    )['loaded'] or 0
+
+    retour_rate = (total_retour / total_loaded * 100) if total_loaded > 0 else 0
 
     active_sellers = Seller.objects.filter(sellerproductdayentry__date=today).distinct()
-    active_sellers_count = active_sellers.count()  # ✅ Fix for seller card
+    active_sellers_count = active_sellers.count()
 
     top_products = (
-        today_sales.values('product__name')
+        today_entries.values('product__name')
         .annotate(total_vendu=Sum('vendu'))
         .order_by('-total_vendu')[:5]
     )
 
     sales_by_seller = (
-        today_sales.values('seller__name')
+        today_entries.values('seller__name')
         .annotate(total_vendu=Sum('vendu'), total_amount=Sum('amount'))
         .order_by('-total_amount')
     )
 
-
     current_month = today.month
     current_year = today.year
-
-    monthly_sales = SellerProductDayEntry.objects.filter(
-        date__year=current_year, date__month=current_month
+    past_days_entries = SellerProductDayEntry.objects.filter(
+        date__lt=today,
+        date__year=current_year,
+        date__month=current_month
     )
-    monthly_sales_amount = monthly_sales.aggregate(amount=Sum('amount'))['amount'] or 0
+
+    monthly_sales_amount = past_days_entries.aggregate(amount=Sum('amount'))['amount'] or 0
 
     context = {
         'total_products': total_products,
         'low_stock_products': low_stock_products,
-        'low_stock_count': low_stock_count,  # ✅ for KPI
-        'sales_today': total_amount,
-        'total_quantity_sold': total_quantity_sold,
-        'active_sellers_count': active_sellers_count,  # ✅ for KPI
+        'low_stock_count': low_stock_count,
+        'active_sellers_count': active_sellers_count,
         'top_products': top_products,
         'seller_sales_today': sales_by_seller,
         'today': today,
         'monthly_sales_amount': monthly_sales_amount,
+        'retour_rate': retour_rate,
     }
     return render(request, 'inventory/metrics_dashboard.html', context)
-
-
-# views.py
-from django.shortcuts import render, get_object_or_404, redirect
-from django.contrib import messages
-from decimal import Decimal
-from django.utils.timezone import now
-from datetime import datetime
-from django.db.models import Sum
-from .models import Seller, SellerProductDayEntry, SellerPayment
 
 
 @login_required
@@ -1127,13 +1039,6 @@ def seller_payment_entry(request):
         "existing_payment": existing_payment,
     })
 
-
-# views.py
-
-from django.db.models import Sum, F, ExpressionWrapper, DecimalField, Max
-from django.shortcuts import render
-from .models import SellerPayment
-
 @login_required
 def unpaid_balances_report(request):
     unpaid_summary = (
@@ -1157,11 +1062,6 @@ def unpaid_balances_report(request):
     return render(request, 'payments/unpaid_balances_report.html', {
         'unpaid_summary': unpaid_summary
     })
-
-from django.shortcuts import render, get_object_or_404
-from .models import Seller, SellerPayment, SellerProductDayEntry
-from django.db.models import Sum
-from datetime import datetime
 
 @login_required
 def seller_payment_history(request):
@@ -1211,20 +1111,6 @@ def seller_payment_history(request):
     }
     return render(request, 'payments/seller_payment_history.html', context)
 
-
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib import messages
-from django.contrib.auth.decorators import login_required
-from .models import Customer, Seller, Product
-from .models import CustomerOrder, CustomerOrderItem
-from django.template.loader import get_template
-from xhtml2pdf import pisa
-from django.http import HttpResponse
-from django.utils.timezone import now
-
-from django.contrib.auth.decorators import login_required
-from django.core.exceptions import ObjectDoesNotExist
-
 @login_required
 def customer_list(request):
     try:
@@ -1236,12 +1122,6 @@ def customer_list(request):
     return render(request, "sales/customer_list.html", {
         "customers": customers
     })
-
-from django.core.exceptions import ObjectDoesNotExist
-from django.contrib import messages
-from django.contrib.auth.decorators import login_required
-from django.shortcuts import render, redirect
-from .models import Customer
 
 @login_required
 def customer_create(request):
@@ -1262,13 +1142,6 @@ def customer_create(request):
         return redirect("products:customer_list")
 
     return render(request, "sales/customer_form.html")
-
-from django.shortcuts import render, get_object_or_404, redirect
-from django.contrib.auth.decorators import login_required
-from django.contrib import messages
-from .models import Product, Customer, CustomerOrder, CustomerOrderItem
-from decimal import Decimal
-from django.utils.timezone import now
 
 @login_required
 def order_create(request, customer_id):
@@ -1315,14 +1188,6 @@ def order_detail(request, order_id):
     order = get_object_or_404(CustomerOrder, id=order_id)
     return render(request, "sales/order_detail.html", {"order": order})
 
-
-# views.py
-from django.template.loader import get_template
-from xhtml2pdf import pisa
-from django.http import HttpResponse
-from .models import CustomerOrder
-from django.shortcuts import get_object_or_404
-
 @login_required
 def order_pdf(request, order_id):
     order = get_object_or_404(CustomerOrder.objects.select_related('customer', 'seller').prefetch_related('items__product'), id=order_id)
@@ -1338,19 +1203,11 @@ def order_pdf(request, order_id):
         return HttpResponse("Erreur lors de la génération du PDF", status=500)
     return response
 
-
 # views.py
 @login_required
 def order_receipt(request, order_id):
     order = get_object_or_404(CustomerOrder, id=order_id, seller=request.user.seller)
     return render(request, 'pdf/order_receipt_mini.html', {'order': order})
-
-
-from .models import CustomerOrder
-from django.contrib.auth.decorators import login_required
-
-from django.db.models import Q
-from django.utils.dateparse import parse_date
 
 @login_required
 def customer_order_list(request):
@@ -1379,13 +1236,6 @@ def customer_order_list(request):
         'selected_date': date,
     })
 
-
-from django.template.loader import get_template
-from django.http import HttpResponse
-from xhtml2pdf import pisa
-from .models import SellerProductDayEntry, Seller
-from datetime import datetime
-
 @login_required
 def export_load_pdf(request, seller_id, date):
     date_obj = datetime.strptime(date, '%Y-%m-%d').date()
@@ -1407,15 +1257,6 @@ def export_load_pdf(request, seller_id, date):
     response = HttpResponse(content_type='application/pdf')
     response['Content-Disposition'] = f'filename="Chargement-{seller.name}-{date}.pdf"'
    
-# products/views.py
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required
-from .models import Product, Seller, SellerInventory, Customer, CustomerOrder, SellerPayment
-from django.contrib import messages
-from datetime import datetime
-from django.db.models import Sum
-
-
 @login_required
 def mobile_load_inventory(request):
     seller = get_object_or_404(Seller, user=request.user)
@@ -1442,7 +1283,6 @@ def mobile_load_inventory(request):
         "current_stock": current_stock,
     })
 
-
 @login_required
 def mobile_unload_inventory(request):
     seller = get_object_or_404(Seller, user=request.user)
@@ -1463,7 +1303,6 @@ def mobile_unload_inventory(request):
         "inventory": inventory_data
     })
 
-
 @login_required
 def mobile_inventory_status(request):
     seller = get_object_or_404(Seller, user=request.user)
@@ -1472,20 +1311,17 @@ def mobile_inventory_status(request):
         "inventory": inventory_data
     })
 
-
 @login_required
 def mobile_clients(request):
     seller = get_object_or_404(Seller, user=request.user)
     clients = Customer.objects.filter(seller=seller)
     return render(request, "mobile/mobile_clients.html", {"clients": clients})
 
-
 @login_required
 def mobile_orders(request):
     seller = get_object_or_404(Seller, user=request.user)
     orders = CustomerOrder.objects.filter(seller=seller).select_related("customer").order_by("-date")
     return render(request, "mobile/mobile_orders.html", {"orders": orders})
-
 
 @login_required
 def mobile_cash(request):
@@ -1501,13 +1337,6 @@ def mobile_cash(request):
         "total_paid": total_paid,
         "total_balance": total_balance
     })
-
-# views.py
-
-from django.contrib.auth.decorators import login_required
-from django.shortcuts import render, redirect, get_object_or_404
-from decimal import Decimal
-from .models import Customer, Product, CustomerOrder, CustomerOrderItem
 
 @login_required
 def mobile_create_order(request):
@@ -1560,11 +1389,9 @@ def mobile_order_detail(request, order_id):
         'items': order.items.select_related('product')
     })
 
-# views.py
 @login_required
 def mobile_landing(request):
     return render(request, 'mobile/mobile_landing.html')
-
 
 @login_required
 def mobile_create_customer(request):
