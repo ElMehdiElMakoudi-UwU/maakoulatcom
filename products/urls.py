@@ -73,6 +73,9 @@ urlpatterns = [
     path('mobile/orders/<int:order_id>/', views.mobile_order_detail, name='mobile_order_detail'),
     # urls.py
     path('accounts/profile/', views.post_login_redirect, name='post_login_redirect'),
+    # urls.py
+    path('manager/', views.manager_landing, name='manager_landing'),
+
 
 
 ]
