@@ -1,0 +1,107 @@
+{% extends 'products/base.html' %}
+{% block title %}Accueil gerant{% endblock %}
+{% block content %}
+<div class="container py-4">
+    <h2 class="mb-4">Dashboard gerant</h2>
+
+    <!-- KPIs -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-bg-primary mb-3">
+                <div class="card-body">
+                    <h6 class="card-title">Valeur du Stock</h6>
+                    <p class="fs-5">{{ total_stock_value|floatformat:2 }} DH</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-bg-success mb-3">
+                <div class="card-body">
+                    <h6 class="card-title">Ventes du Mois</h6>
+                    <p class="fs-5">{{ monthly_sales|floatformat:2 }} DH</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-bg-info mb-3">
+                <div class="card-body">
+                    <h6 class="card-title">Bénéfice du Mois</h6>
+                    <p class="fs-5">{{ monthly_profit|floatformat:2 }} DH</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-bg-warning mb-3">
+                <div class="card-body">
+                    <h6 class="card-title">Articles Faible Stock</h6>
+                    <p class="fs-5">{{ low_stock_count }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row mb-4">
+        <div class="col-md-3 d-grid">
+            <a href="{% url 'products:load_new_inventory' %}" class="btn btn-outline-primary">Chargement</a>
+        </div>
+        <div class="col-md-3 d-grid">
+            <a href="{% url 'products:unload_new_inventory' %}" class="btn btn-outline-danger">Déchargement</a>
+        </div>
+        <div class="col-md-3 d-grid">
+            <a href="{% url 'products:sales_report' %}" class="btn btn-outline-secondary">Rapport Ventes</a>
+        </div>
+        <div class="col-md-3 d-grid">
+            <a href="{% url 'products:seller_payment_entry' %}" class="btn btn-outline-dark">Paiements</a>
+        </div>
+    </div>
+
+    <!-- Top 10 Products -->
+    <div class="card mb-4">
+        <div class="card-header fw-bold">Top 10 Produits du Mois</div>
+        <div class="card-body p-0">
+            <table class="table table-striped table-bordered mb-0">
+                <thead>
+                    <tr>
+                        <th>Produit</th>
+                        <th>Quantité Vendue</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in top_products %}
+                    <tr>
+                        <td>{{ p.product__name }}</td>
+                        <td>{{ p.total_sold }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Sales by Seller -->
+    <div class="card">
+        <div class="card-header fw-bold">Ventes par Vendeur</div>
+        <div class="card-body p-0">
+            <table class="table table-striped table-bordered mb-0">
+                <thead>
+                    <tr>
+                        <th>Vendeur</th>
+                        <th>Date</th>
+                        <th>Montant</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in sales_by_seller %}
+                    <tr>
+                        <td>{{ row.seller__name }}</td>
+                        <td>{{ row.date }}</td>
+                        <td>{{ row.total|floatformat:2 }} DH</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>                
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

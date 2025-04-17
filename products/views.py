@@ -40,7 +40,7 @@ def post_login_redirect(request):
         if role == 'seller':
             return redirect('products:mobile_landing')  # NOT 'mobile_clients'
         elif role == 'manager':
-            return redirect('products:metrics_dashboard')
+            return redirect('products:manager_landing')
 
     return redirect('products:metrics_dashboard')  # fallback
 
@@ -1406,3 +1406,53 @@ def mobile_create_customer(request):
         return redirect('products:mobile_clients')
 
     return render(request, 'mobile/mobile_clients_create.html')
+
+@login_required
+def manager_landing(request):
+    today = now().date()
+    current_month = today.month
+    current_year = today.year
+
+    # Stock value = quantity * selling_price
+    stock_value = Product.objects.aggregate(
+        total=Sum(F('quantity') * F('selling_price'), output_field=DecimalField())
+    )['total'] or 0
+
+    # Monthly sales = sum of amount for current month
+    monthly_entries = SellerProductDayEntry.objects.filter(date__year=current_year, date__month=current_month)
+    monthly_sales = monthly_entries.aggregate(total=Sum('amount'))['total'] or 0
+
+    # Monthly profit = (selling_price - purchase_price) * vendu
+    profit_expr = ExpressionWrapper(
+        (F('product__selling_price') - F('product__purchase_price')) * F('vendu'),
+        output_field=DecimalField()
+    )
+    monthly_profit = monthly_entries.aggregate(profit=Sum(profit_expr))['profit'] or 0
+
+    # Low stock products
+    low_stock_count = Product.objects.filter(quantity__lte=F('critical_threshold')).count()
+
+    # Top 10 products this month
+    top_products = (
+        monthly_entries.values('product__name')
+        .annotate(total_sold=Sum('vendu'))
+        .order_by('-total_sold')[:10]
+    )
+
+    # Sales per seller per date
+    sales_by_seller = (
+        monthly_entries.values('seller__name', 'date')
+        .annotate(total=Sum('amount'))
+        .order_by('-date')
+    )
+
+    context = {
+        'total_stock_value': stock_value,
+        'monthly_sales': monthly_sales,
+        'monthly_profit': monthly_profit,
+        'low_stock_count': low_stock_count,
+        'top_products': top_products,
+        'sales_by_seller': sales_by_seller,
+        'today': today,
+    }
+    return render(request, 'dashboard/manager_landing.html', context)
