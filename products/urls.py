@@ -5,7 +5,7 @@ from products import views
 app_name = 'products'
 
 urlpatterns = [
-    path('', views.dashboard, name='dashboard'),
+    path('', views. manager_landing, name='dashboard'),
     path('admin/', admin.site.urls),
     path('list/', views.product_list, name='product_list'),
     path('new/', views.product_form, name='product_form'),
