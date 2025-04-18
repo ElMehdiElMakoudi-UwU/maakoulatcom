@@ -2,7 +2,7 @@
 {% block content %}
 <h2>Détail de la Commande #{{ order.id }}</h2>
 <p>Client : {{ order.customer.name }}</p>
-<p>Date : {{ order.date }}</p>
+<p>Date : {{ order.date|date:"d/m/Y" }}</p>
 <table class="table">
   <thead><tr><th>Produit</th><th>Prix</th><th>Quantité</th><th>Total</th></tr></thead>
   <tbody>

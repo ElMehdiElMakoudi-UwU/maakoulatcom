@@ -31,7 +31,7 @@
             <tbody>
                 {% for row in history %}
                 <tr>
-                    <td>{{ row.date }}</td>
+                    <td>{{ row.date|date:"d/m/Y" }}</td>
                     <td>{{ row.sold|floatformat:2 }}</td>
                     <td>{{ row.paid|floatformat:2 }}</td>
                     <td>{{ row.remaining|floatformat:2 }}</td>

@@ -20,7 +20,7 @@
             <td>{{ entry.product.name }}</td>
             <td>{{ entry.get_entry_type_display }}</td>
             <td>{{ entry.quantity }}</td>
-            <td>{{ entry.date }}</td>
+            <td>{{ entry.date|date:"d/m/Y" }}</td>
             <td>
                 <a href="{% url 'products:edit_inventory_entry' entry.id %}" class="btn btn-warning btn-sm">Modifier</a>
                 <a href="{% url 'products:delete_inventory_entry' entry.id %}" class="btn btn-danger btn-sm">Supprimer</a>

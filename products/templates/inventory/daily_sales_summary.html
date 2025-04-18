@@ -30,7 +30,7 @@
     <tbody>
         {% for item in summary %}
         <tr>
-            <td>{{ item.date }}</td>
+            <td>{{ item.date|date:"d/m/Y" }}</td>
             <td>{{ item.seller__name }}</td>
             <td>{{ item.total_vendu }}</td>
             <td>{{ item.total_amount|floatformat:2 }} DH</td>

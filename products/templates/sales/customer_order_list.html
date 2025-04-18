@@ -48,7 +48,7 @@
             <td>{{ order.id }}</td>
             <td>{{ order.customer.name }}</td>
             <td>{{ order.seller.name }}</td>
-            <td>{{ order.date }}</td>
+            <td>{{ order.date|date:"d/m/Y H:i" }}</td>
             <td>{{ order.total_amount }} DH</td>
             <td>
                 <a href="{% url 'products:order_detail' order.id %}" class="btn btn-sm btn-info">Détails</a>

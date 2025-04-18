@@ -6,7 +6,7 @@
   <tbody>
     {% for order in orders %}
     <tr>
-      <td>{{ order.date }}</td>
+      <td>{{ order.date|date:"d/m/Y" }}</td>
       <td>{{ order.customer.name }}</td>
       <td>{{ order.total_amount }} DH</td>
       <td><a href="{% url 'products:order_detail' order.id %}" class="btn btn-sm btn-primary">Voir</a></td>

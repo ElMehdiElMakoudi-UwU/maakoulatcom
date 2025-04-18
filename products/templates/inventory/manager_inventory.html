@@ -26,7 +26,7 @@
     <tbody>
         {% for date in unique_dates %}
             <tr>
-                <td>{{ date }}</td>
+                <td>{{ date|date:"d/m/Y" }}</td>
                 <td>
                     <a href="{% url 'products:load_inventory' %}?seller={{ selected_seller.id }}&date={{ date }}" class="btn btn-sm btn-primary">Chargement</a>
                     <a href="{% url 'products:unload_inventory' %}?seller={{ selected_seller.id }}&date={{ date }}" class="btn btn-sm btn-warning">Déchargement</a>

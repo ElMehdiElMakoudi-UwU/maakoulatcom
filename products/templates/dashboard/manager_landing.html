@@ -95,7 +95,7 @@
                     {% for row in sales_by_seller %}
                     <tr>
                         <td>{{ row.seller__name }}</td>
-                        <td>{{ row.date }}</td>
+                        <td>{{ row.date|date:"d/m/Y" }}</td>
                         <td>{{ row.total|floatformat:2 }} DH</td>
                     </tr>
                     {% endfor %}
