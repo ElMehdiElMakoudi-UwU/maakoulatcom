@@ -1,0 +1,13 @@
+{% extends 'products/base.html' %}
+{% block title %}Ajouter une Dépense{% endblock %}
+{% block content %}
+<div class="container mt-4">
+  <h3>Ajouter une Dépense</h3>
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit" class="btn btn-primary">Enregistrer</button>
+    <a href="{% url 'products:expense_list' %}" class="btn btn-secondary">Retour</a>
+  </form>
+</div>
+{% endblock %}

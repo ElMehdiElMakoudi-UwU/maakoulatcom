@@ -50,3 +50,30 @@ class InvoiceItemForm(forms.ModelForm):
             'unit_price': forms.NumberInput(attrs={'class': 'form-control', 'readonly': 'readonly'}),
             'quantity': forms.NumberInput(attrs={'class': 'form-control', 'min': '0'}),
         }
+
+
+# forms.py
+from django import forms
+from .models import Expense
+
+class ExpenseForm(forms.ModelForm):
+    class Meta:
+        model = Expense
+        fields = ['date', 'category', 'amount', 'description', 'receipt']
+        widgets = {
+            'date': forms.DateInput(attrs={'type': 'date'}),
+        }
+
+# forms.py
+
+from .models import Revenue
+from django import forms
+
+class RevenueForm(forms.ModelForm):
+    class Meta:
+        model = Revenue
+        fields = ['date', 'amount', 'category', 'description']
+        widgets = {
+            'date': forms.DateInput(attrs={'type': 'date'}),
+            'description': forms.Textarea(attrs={'rows': 2}),
+        }

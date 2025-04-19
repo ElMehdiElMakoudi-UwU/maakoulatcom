@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+        }
+
+        h2 {
+            text-align: center;
+        }
+
+        .periode {
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            table-layout: fixed;
+        }
+
+        th, td {
+            border: 1px solid #000;
+            padding: 6px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #eee;
+        }
+
+        .col-date { width: 20%; }
+        .col-category { width: 20%; }
+        .col-description { width: 40%; }
+        .col-amount {
+            width: 20%;
+            text-align: right;
+        }
+
+        tfoot td {
+            font-weight: bold;
+            background-color: #f8f8f8;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>Journal des Dépenses</h2>
+
+    {% if start_date and end_date %}
+    <p class="periode">Période : Du {{ start_date|date:"d/m/Y" }} au {{ end_date|date:"d/m/Y" }}</p>
+    {% endif %}
+
+    <table>
+        <thead>
+            <tr>
+              <th class="col-date">Date</th>
+              <th class="col-category">Catégorie</th>
+              <th class="col-description">Description</th>
+              <th class="col-amount">Montant (DH)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for depense in depenses %}
+            <tr>
+              <td class="col-date">{{ depense.date|date:"d/m/Y" }}</td>
+              <td class="col-category">{{ depense.category }}</td>
+              <td class="col-description">{{ depense.description|default:"-" }}</td>
+              <td class="col-amount">{{ depense.amount|floatformat:2 }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="4" style="text-align: center;">Aucune dépense pour cette période.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+
+        {% if depenses %}
+        <tfoot>
+            <tr>
+                <td colspan="3" style="text-align: right;">Total</td>
+                <td class="col-amount">
+                    {{ total_amount|floatformat:2 }}
+                </td>
+            </tr>
+        </tfoot>
+        {% endif %}
+    </table>
+</body>
+</html>

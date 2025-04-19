@@ -75,7 +75,14 @@ urlpatterns = [
     path('accounts/profile/', views.post_login_redirect, name='post_login_redirect'),
     # urls.py
     path('manager/', views.manager_landing, name='manager_landing'),
-
-
+    # comptabilite
+    path('expenses/', views.expense_list, name='expense_list'),
+    path('expenses/add/', views.expense_entry, name='expense_entry'),
+    path('expenses/pdf/', views.expense_list_pdf, name='expense_list_pdf'),
+    path('expenses/export-excel/', views.export_expenses_excel, name='export_expenses_excel'),
+    path('revenues/', views.revenue_list, name='revenue_list'),
+    path('revenues/new/', views.revenue_create, name='revenue_create'),
+    path('revenues/pdf/', views.revenue_list_pdf, name='revenue_list_pdf'),
+    path("revenues/export/excel/", views.export_revenues_excel, name="export_revenues_excel"),
 
 ]
