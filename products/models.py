@@ -300,3 +300,37 @@ class StockMovement(models.Model):
 
     def __str__(self):
         return f"{self.date.strftime('%Y-%m-%d %H:%M')} - {self.product.name} ({self.get_type_display()})"
+
+class Expense(models.Model):
+    CATEGORY_CHOICES = [
+        ('carburant', 'Carburant'),
+        ('salaire', 'Salaire'),
+        ('achat_stock', 'Achat Stock'),
+        ('frais_livraison', 'Frais Livraison'),
+        ('divers', 'Divers'),
+    ]
+
+    date = models.DateField(default=now)
+    category = models.CharField(max_length=50, choices=CATEGORY_CHOICES)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    description = models.TextField(blank=True, null=True)
+    receipt = models.ImageField(upload_to='expenses/', blank=True, null=True)  # Photo du ticket
+
+    def __str__(self):
+        return f"{self.date} - {self.category} - {self.amount} DH"
+
+class Revenue(models.Model):
+    CATEGORY_CHOICES = [
+        ('Vente', 'Vente'),
+        ('Investissement', 'Investissement'),
+        ('Aide', 'Aide'),
+        ('Divers', 'Divers'),
+    ]
+
+    date = models.DateField(default=now)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    category = models.CharField(max_length=50, choices=CATEGORY_CHOICES, default='Divers')
+    description = models.TextField(blank=True, null=True)
+
+    def __str__(self):
+        return f"{self.date} - {self.amount} DH ({self.category})"

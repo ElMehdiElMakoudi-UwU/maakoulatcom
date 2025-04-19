@@ -18,18 +18,28 @@ from io import BytesIO
 import csv
 
 from xhtml2pdf import pisa
+import openpyxl
+from openpyxl.styles import Font
+from openpyxl.utils import get_column_letter
+from openpyxl.styles import Alignment
+
+
+
 
 from .models import (
     Product, InventoryEntry, SalesEntry, Order, Invoice, InvoiceItem,
     Seller, SellerInventory, LoadingRecord, UnloadingRecord,
     SellerProductDayEntry, DailySellerStockRecord, SellerPayment,
-    Customer, CustomerOrder, CustomerOrderItem, SalesRecord
+    Customer, CustomerOrder, CustomerOrderItem, SalesRecord, Expense, Revenue
 )
 
 from .forms import (
     ProductForm, InventoryEntryForm, SalesEntryForm,
-    InvoiceForm, InvoiceItemForm
+    InvoiceForm, InvoiceItemForm, ExpenseForm, RevenueForm
 )
+
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import redirect
 
 @login_required
 def post_login_redirect(request):
@@ -37,12 +47,18 @@ def post_login_redirect(request):
 
     if hasattr(user, 'seller'):
         role = getattr(user.seller, 'role', None)
+
+        # Ensure seller role exists and is valid
         if role == 'seller':
-            return redirect('products:mobile_landing')  # NOT 'mobile_clients'
+            return redirect('products:mobile_landing')
         elif role == 'manager':
             return redirect('products:manager_landing')
+        else:
+            # Unknown role fallback
+            return redirect('products:mobile_landing')
 
-    return redirect('products:metrics_dashboard')  # fallback
+    # If no seller object is linked (possibly superuser/admin)
+    return redirect('products:metrics_dashboard')
 
 @login_required
 def product_form(request):
@@ -1456,3 +1472,220 @@ def manager_landing(request):
         'today': today,
     }
     return render(request, 'dashboard/manager_landing.html', context)
+
+@login_required
+def expense_entry(request):
+    if request.method == 'POST':
+        form = ExpenseForm(request.POST, request.FILES)
+        if form.is_valid():
+            form.save()
+            return redirect('products:expense_list')
+    else:
+        form = ExpenseForm()
+    return render(request, 'expenses/expense_form.html', {'form': form})
+
+@login_required
+def expense_list(request):
+    category = request.GET.get('category')
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+
+    expenses = Expense.objects.all()
+
+    if category:
+        expenses = expenses.filter(category=category)
+    if start_date:
+        expenses = expenses.filter(date__gte=start_date)
+    if end_date:
+        expenses = expenses.filter(date__lte=end_date)
+
+    return render(request, 'expenses/expense_list.html', {
+        'expenses': expenses,
+        'categories': Expense.CATEGORY_CHOICES,
+        'selected_category': category,
+        'start_date': start_date,
+        'end_date': end_date
+    })
+
+@login_required
+def expense_list_pdf(request):
+    category = request.GET.get('category')
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+
+    expenses = Expense.objects.all()
+
+    if category:
+        expenses = expenses.filter(category=category)
+    if start_date:
+        start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
+        expenses = expenses.filter(date__gte=start_date)
+    if end_date:
+        end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
+        expenses = expenses.filter(date__lte=end_date)
+
+    total_amount = expenses.aggregate(total=Sum('amount'))['total'] or 0
+
+
+    context = {
+        'depenses': expenses,
+        'total_amount': total_amount,
+        'start_date': start_date,
+        'end_date': end_date
+    }
+
+    html = render_to_string("expenses/expense_list_pdf.html", context)
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = 'inline; filename="dépenses.pdf"'
+    pisa.CreatePDF(BytesIO(html.encode("UTF-8")), dest=response)
+    return response
+
+@login_required
+def export_expenses_excel(request):
+    category = request.GET.get('category')
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+
+    expenses = Expense.objects.all()
+    if category:
+        expenses = expenses.filter(category=category)
+    if start_date:
+        expenses = expenses.filter(date__gte=start_date)
+    if end_date:
+        expenses = expenses.filter(date__lte=end_date)
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Dépenses"
+
+    headers = ["Date", "Catégorie", "Description", "Montant (DH)"]
+    ws.append(headers)
+    for col in range(1, 5):
+        ws.cell(row=1, column=col).font = Font(bold=True)
+
+    total = 0
+    for expense in expenses:
+        ws.append([
+            expense.date.strftime("%d/%m/%Y"),
+            expense.category,
+            expense.description or "-",
+            float(expense.amount)
+        ])
+        total += expense.amount
+
+    # Total row
+    ws.append(["", "", "TOTAL", total])
+
+    response = HttpResponse(content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    response['Content-Disposition'] = 'attachment; filename="depenses.xlsx"'
+    wb.save(response)
+    return response
+
+@login_required
+def revenue_create(request):
+    form = RevenueForm(request.POST or None)
+    if form.is_valid():
+        form.save()
+        messages.success(request, "Recette enregistrée avec succès.")
+        return redirect('products:revenue_list')
+
+    return render(request, 'revenue/revenue_form.html', {'form': form})
+
+@login_required
+def revenue_list(request):
+    category = request.GET.get('category')
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+
+    revenues = Revenue.objects.all()
+    if category:
+        revenues = revenues.filter(category=category)
+    if start_date:
+        revenues = revenues.filter(date__gte=start_date)
+    if end_date:
+        revenues = revenues.filter(date__lte=end_date)
+
+    categories = Revenue.CATEGORY_CHOICES
+
+    return render(request, 'revenue/revenue_list.html', {
+        'revenues': revenues,
+        'categories': categories,
+        'selected_category': category,
+        'start_date': start_date,
+        'end_date': end_date
+    })
+
+@login_required
+def revenue_list_pdf(request):
+    category = request.GET.get('category')
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+
+    revenues = Revenue.objects.all()
+    if category:
+        revenues = revenues.filter(category=category)
+    if start_date:
+        start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
+        revenues = revenues.filter(date__gte=start_date)
+    if end_date:
+        end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
+        revenues = revenues.filter(date__lte=end_date)
+
+    total_amount = revenues.aggregate(total=Sum('amount'))['total'] or 0
+
+
+    context = {
+        'revenues': revenues,
+        'total_amount': total_amount,
+        'start_date': start_date,
+        'end_date': end_date
+    }
+
+    html = render_to_string("revenue/revenue_list_pdf.html", context)
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = 'inline; filename="revenus.pdf"'
+    pisa.CreatePDF(BytesIO(html.encode("UTF-8")), dest=response)
+    return response
+
+@login_required
+def export_revenues_excel(request):
+    category = request.GET.get("category")
+    start_date = request.GET.get("start_date")
+    end_date = request.GET.get("end_date")
+
+    revenues = Revenue.objects.all()
+    if category:
+        revenues = revenues.filter(category=category)
+    if start_date:
+        revenues = revenues.filter(date__gte=start_date)
+    if end_date:
+        revenues = revenues.filter(date__lte=end_date)
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Recettes"
+
+    headers = ['Date', 'Catégorie', 'Description', 'Montant (DH)']
+    ws.append(headers)
+
+    for revenue in revenues:
+        ws.append([
+            revenue.date.strftime('%d/%m/%Y'),
+            revenue.category,
+            revenue.description or '-',
+            float(revenue.amount)
+        ])
+
+    # Format columns
+    for i, col in enumerate(headers, 1):
+        ws.column_dimensions[get_column_letter(i)].width = 25
+        for row in ws.iter_rows(min_row=2, min_col=i, max_col=i):
+            for cell in row:
+                cell.alignment = Alignment(vertical="center")
+
+    response = HttpResponse(
+        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+    response['Content-Disposition'] = 'attachment; filename=revenus.xlsx'
+    wb.save(response)
+    return response

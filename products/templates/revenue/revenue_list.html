@@ -1,0 +1,60 @@
+{% extends 'products/base.html' %}
+{% block content %}
+<div class="container mt-4">
+  <h2 class="mb-4">Journal des Recettes</h2>
+
+  <form method="get" class="row g-3 mb-4">
+    <div class="col-md-3">
+      <label for="start_date">Du :</label>
+      <input type="date" class="form-control" name="start_date" value="{{ start_date }}">
+    </div>
+    <div class="col-md-3">
+      <label for="end_date">Au :</label>
+      <input type="date" class="form-control" name="end_date" value="{{ end_date }}">
+    </div>
+    <div class="col-md-3">
+      <label for="category">Catégorie :</label>
+      <select name="category" class="form-select">
+        <option value="">Toutes</option>
+        {% for cat, label in categories %}
+          <option value="{{ cat }}" {% if selected_category == cat %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-3 d-flex align-items-end">
+      <button type="submit" class="btn btn-primary">Filtrer</button>
+      <a href="{% url 'products:revenue_create' %}" class="btn btn-success ms-2">➕ Nouvelle Recette</a>
+    </div>
+
+    <div class="d-flex gap-2 mb-3">
+      <a href="{% url 'products:revenue_list_pdf' %}?category={{ selected_category }}&start_date={{ start_date }}&end_date={{ end_date }}" class="btn btn-outline-dark">📄 Export PDF</a>
+      <a href="{% url 'products:export_revenues_excel' %}?category={{ request.GET.category }}&start_date={{ request.GET.start_date }}&end_date={{ request.GET.end_date }}" class="btn btn-outline-dark">📁 Exporter en Excel</a>
+  </div>
+  </form>
+
+  <table class="table table-bordered table-striped">
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Catégorie</th>
+        <th>Description</th>
+        <th class="text-end">Montant (DH)</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in revenues %}
+      <tr>
+        <td>{{ r.date|date:"d/m/Y" }}</td>
+        <td>{{ r.category }}</td>
+        <td>{{ r.description|default:"-" }}</td>
+        <td class="text-end">{{ r.amount|floatformat:2 }}</td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="4" class="text-center">Aucune recette disponible.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
