@@ -1,4 +1,3 @@
-<!-- Template for mobile_clients.html -->
 {% extends 'mobile/base_mobile.html' %}
 {% block content %}
 <div class="container mt-4">
@@ -7,11 +6,21 @@
     <a href="{% url 'products:mobile_create_customer' %}" class="btn btn-primary btn-sm">+ Nouveau Client</a>
   </div>
 
+  <form method="get" class="mb-3">
+    <input type="text" name="q" class="form-control" placeholder="🔍 Rechercher un client..." value="{{ request.GET.q }}">
+  </form>
+
   <ul class="list-group">
     {% for client in clients %}
-    <li class="list-group-item d-flex justify-content-between">
-      {{ client.name }}
+    <li class="list-group-item d-flex justify-content-between align-items-center">
+      <span>{{ client.name }}</span>
+      <div class="btn-group">
+        <a href="{% url 'products:mobile_create_order' %}?customer_id={{ client.id }}" class="btn btn-sm btn-outline-primary">🛒</a>
+        <a href="{% url 'products:mobile_create_customer' %}?customer_id={{ client.id }}" class="btn btn-sm btn-outline-primary">✏️</a>
+      </div>
     </li>
+    {% empty %}
+    <li class="list-group-item">Aucun client trouvé.</li>
     {% endfor %}
   </ul>
 </div>

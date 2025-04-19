@@ -12,10 +12,12 @@
         <select name="customer_id" id="customer" class="form-select" required>
             <option value="">-- Sélectionner un client --</option>
             {% for customer in customers %}
-                <option value="{{ customer.id }}">{{ customer.name }}</option>
+                <option value="{{ customer.id }}" {% if customer.id|stringformat:"s" == selected_customer_id %}selected{% endif %}>
+                    {{ customer.name }}
+                </option>
             {% endfor %}
         </select>
-    </div>
+            </div>
 
     <div class="table-responsive mb-3">
         <table class="table table-bordered align-middle text-center">

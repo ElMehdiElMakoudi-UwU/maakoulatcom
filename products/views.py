@@ -1331,7 +1331,14 @@ def mobile_inventory_status(request):
 def mobile_clients(request):
     seller = get_object_or_404(Seller, user=request.user)
     clients = Customer.objects.filter(seller=seller)
-    return render(request, "mobile/mobile_clients.html", {"clients": clients})
+
+    query = request.GET.get('q')
+    if query:
+        clients = clients.filter(name__icontains=query)
+
+    return render(request, "mobile/mobile_clients.html", {
+        "clients": clients
+    })
 
 @login_required
 def mobile_orders(request):
@@ -1359,6 +1366,9 @@ def mobile_create_order(request):
     seller = request.user.seller
     customers = Customer.objects.filter(seller=seller)
     products = Product.objects.all()
+
+    # Capture selected customer from GET query
+    selected_customer_id = request.GET.get("customer_id")
 
     if request.method == 'POST':
         customer_id = request.POST.get('customer_id')
@@ -1391,10 +1401,10 @@ def mobile_create_order(request):
 
         return redirect('products:mobile_order_detail', order_id=order.id)
 
-
     return render(request, 'mobile/create_order.html', {
         'customers': customers,
-        'products': products
+        'products': products,
+        'selected_customer_id': selected_customer_id,
     })
 
 @login_required
@@ -1412,16 +1422,32 @@ def mobile_landing(request):
 @login_required
 def mobile_create_customer(request):
     seller = request.user.seller
+    customer_id = request.GET.get("customer_id")
+    is_edit = bool(customer_id)
+
+    customer = get_object_or_404(Customer, id=customer_id, seller=seller) if is_edit else None
+
     if request.method == 'POST':
         name = request.POST.get('name')
         phone = request.POST.get('phone')
         address = request.POST.get('address')
 
-        Customer.objects.create(name=name, phone=phone, address=address, seller=seller)
-        messages.success(request, "Client ajouté avec succès.")
+        if is_edit and customer:
+            customer.name = name
+            customer.phone = phone
+            customer.address = address
+            customer.save()
+            messages.success(request, "Client mis à jour avec succès.")
+        else:
+            Customer.objects.create(name=name, phone=phone, address=address, seller=seller)
+            messages.success(request, "Client ajouté avec succès.")
+
         return redirect('products:mobile_clients')
 
-    return render(request, 'mobile/mobile_clients_create.html')
+    return render(request, 'mobile/mobile_clients_create.html', {
+        'customer': customer,
+        'is_edit': is_edit,
+    })
 
 @login_required
 def manager_landing(request):

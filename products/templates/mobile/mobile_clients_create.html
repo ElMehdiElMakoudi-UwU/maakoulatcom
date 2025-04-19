@@ -1,32 +1,23 @@
 {% extends 'mobile/base_mobile.html' %}
-{% block title %}Ajouter un Client{% endblock %}
+{% block title %}{{ is_edit|yesno:"Modifier Client,Nouveau Client" }}{% endblock %}
 
 {% block content %}
-<div class="card mb-3">
-    <div class="card-body">
-        <h5 class="card-title">Ajouter un Nouveau Client</h5>
-        <form method="post">
-            {% csrf_token %}
+<h4 class="mb-4">{{ is_edit|yesno:"Modifier le Client,Ajouter un Nouveau Client" }}</h4>
 
-            <div class="mb-3">
-                <label for="name" class="form-label">Nom</label>
-                <input type="text" name="name" id="name" class="form-control" required>
-            </div>
-
-            <div class="mb-3">
-                <label for="phone" class="form-label">Téléphone</label>
-                <input type="text" name="phone" id="phone" class="form-control">
-            </div>
-
-            <div class="mb-3">
-                <label for="address" class="form-label">Adresse</label>
-                <textarea name="address" id="address" class="form-control" rows="2"></textarea>
-            </div>
-
-            <div class="d-grid">
-                <button type="submit" class="btn btn-success">Enregistrer</button>
-            </div>
-        </form>
+<form method="post">
+    {% csrf_token %}
+    <div class="mb-3">
+        <label for="name" class="form-label">Nom</label>
+        <input type="text" class="form-control" name="name" required value="{{ customer.name|default_if_none:'' }}">
     </div>
-</div>
+    <div class="mb-3">
+        <label for="phone" class="form-label">Téléphone</label>
+        <input type="text" class="form-control" name="phone" value="{{ customer.phone|default_if_none:'' }}">
+    </div>
+    <div class="mb-3">
+        <label for="address" class="form-label">Adresse</label>
+        <textarea class="form-control" name="address">{{ customer.address|default_if_none:'' }}</textarea>
+    </div>
+    <button type="submit" class="btn btn-success w-100">{{ is_edit|yesno:"Mettre à jour,Créer" }}</button>
+</form>
 {% endblock %}
