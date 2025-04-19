@@ -38,18 +38,27 @@ from .forms import (
     InvoiceForm, InvoiceItemForm, ExpenseForm, RevenueForm
 )
 
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import redirect
+
 @login_required
 def post_login_redirect(request):
     user = request.user
 
     if hasattr(user, 'seller'):
         role = getattr(user.seller, 'role', None)
+
+        # Ensure seller role exists and is valid
         if role == 'seller':
-            return redirect('products:mobile_landing')  # NOT 'mobile_clients'
+            return redirect('products:mobile_landing')
         elif role == 'manager':
             return redirect('products:manager_landing')
+        else:
+            # Unknown role fallback
+            return redirect('products:mobile_landing')
 
-    return redirect('products:metrics_dashboard')  # fallback
+    # If no seller object is linked (possibly superuser/admin)
+    return redirect('products:metrics_dashboard')
 
 @login_required
 def product_form(request):
