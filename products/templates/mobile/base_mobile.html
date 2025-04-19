@@ -36,6 +36,9 @@
 
   <nav class="navbar nav-bottom border-top shadow-sm">
     <div class="container-fluid d-flex justify-content-around text-center">
+      <a href="{% url 'products:mobile_landing' %}" class="{% if request.path == '/mobile/' %}active{% endif %}">
+        <i class="bi bi-house-door fs-4"></i><br />Acceuil
+      </a>
       <a href="{% url 'products:mobile_clients' %}" class="{% if request.path == '/mobile/clients/' %}active{% endif %}">
         <i class="bi bi-people fs-4"></i><br />Clients
       </a>
