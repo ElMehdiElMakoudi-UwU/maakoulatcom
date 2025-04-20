@@ -1343,8 +1343,25 @@ def mobile_clients(request):
 @login_required
 def mobile_orders(request):
     seller = get_object_or_404(Seller, user=request.user)
-    orders = CustomerOrder.objects.filter(seller=seller).select_related("customer").order_by("-date")
-    return render(request, "mobile/mobile_orders.html", {"orders": orders})
+    orders = CustomerOrder.objects.filter(seller=seller).select_related("customer")
+
+    customer_id = request.GET.get("customer_id")
+    date = request.GET.get("date")
+
+    if customer_id:
+        orders = orders.filter(customer_id=customer_id)
+    if date:
+        orders = orders.filter(date__date=date)
+
+    orders = orders.order_by("-date")
+    customers = Customer.objects.filter(seller=seller)
+
+    return render(request, "mobile/mobile_orders.html", {
+        "orders": orders,
+        "customers": customers,
+        "selected_customer": customer_id,
+        "selected_date": date,
+    })
 
 @login_required
 def mobile_cash(request):

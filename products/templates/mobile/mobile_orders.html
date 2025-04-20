@@ -1,15 +1,42 @@
-<!-- Template for mobile_orders.html -->
 {% extends 'mobile/base_mobile.html' %}
 {% block content %}
 <div class="container mt-4">
   <h3 class="mb-3 text-center">Mes Commandes</h3>
-  <a href="{% url 'products:mobile_create_order' %}" class="btn btn-sm btn-outline-primary">Commander</a>
+
+  <!-- Filtres -->
+  <form method="get" class="row g-2 mb-3">
+    <div class="col-6">
+      <select name="customer_id" class="form-select">
+        <option value="">Client</option>
+        {% for client in customers %}
+        <option value="{{ client.id }}" {% if client.id|stringformat:"s" == selected_customer %}selected{% endif %}>
+          {{ client.name }}
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-6">
+      <input type="date" name="date" class="form-control" value="{{ selected_date }}">
+    </div>
+    <div class="col-12 d-grid">
+      <button type="submit" class="btn btn-sm btn-dark">Filtrer</button>
+    </div>
+  </form>
+
+  <a href="{% url 'products:mobile_create_order' %}" class="btn btn-sm btn-outline-primary w-100 mb-3">+ Nouvelle Commande</a>
+
   <ul class="list-group">
     {% for order in orders %}
-    <li class="list-group-item">
-      <strong>{{ order.customer.name }}</strong> - {{ order.date|date:"d/m/Y H:i" }}<br>
-      <span>Total: {{ order.total_amount }} DH</span>
+    <li class="list-group-item d-flex justify-content-between align-items-start flex-column">
+      <div>
+        <strong>{{ order.customer.name }}</strong><br>
+        <small>{{ order.date|date:"d/m/Y H:i" }}</small><br>
+        <span>Total : {{ order.total_amount }} DH</span>
+      </div>
+      <a href="{% url 'products:mobile_order_detail' order.id %}" class="btn btn-sm btn-outline-secondary mt-2">Détails</a>
     </li>
+    {% empty %}
+    <li class="list-group-item text-center text-muted">Aucune commande trouvée</li>
     {% endfor %}
   </ul>
 </div>
