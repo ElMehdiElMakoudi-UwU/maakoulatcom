@@ -20,122 +20,131 @@
     <title>{% block title %}Maakoulatcom Distribution{% endblock %}</title>
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <nav class="navbar navbar-expand-lg navbar-light bg-light shadow-sm">
         <div class="container-fluid">
-            <a class="navbar-brand" href="{% url 'products:manager_landing' %}">
-                <i class="bi bi-shop"></i> Maakoulatcom
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav">
-
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
-                            <i class="bi bi-grid"></i> Produits
-                        </a>
-                        <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="{% url 'products:product_list' %}">Liste</a></li>
-                            <li><a class="dropdown-item" href="{% url 'products:product_form' %}">Ajouter</a></li>
-                            <li><a class="dropdown-item" href="{% url 'products:import_products' %}">Importer</a></li>
-                        </ul>
-                    </li>
-
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
-                            <i class="bi bi-boxes"></i> Inventaire
-                        </a>
-                        <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="{% url 'products:inventory_status' %}">État de Stock</a></li>
-                            <li><a class="dropdown-item" href="{% url 'products:inventory_entry' %}">Nouvelle Entrée</a></li>
-                            <li><a class="dropdown-item" href="{% url 'products:inventory_entries' %}">Gérer les Entrées</a></li>
-                            <li><a class="dropdown-item" href="{% url 'products:bulk_operations' %}">Opérations en Masse</a></li>
-                        </ul>
-                    </li>
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="customerOrdersDropdown" role="button" data-bs-toggle="dropdown">
-                            <i class="bi bi-cart-check"></i> Commandes Clients
-                        </a>
-                        <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="{% url 'products:customer_list' %}">Clients</a></li>
-                            <li><a class="dropdown-item" href="{% url 'products:order_list' %}">Toutes les Commandes</a></li>
-                        </ul>
-                    </li>                    
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
-                            <i class="bi bi-cash-coin"></i> Ventes
-                        </a>
-                        <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="{% url 'products:sales_entry' %}">Nouvelle Vente</a></li>
-                            <li><a class="dropdown-item" href="{% url 'products:sales_entries' %}">Gérer les Ventes</a></li>
-                            <li><a class="dropdown-item" href="{% url 'products:daily_sales_summary' %}">Résumé Journalier</a></li>
-                        </ul>
-                    </li>
-
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
-                            <i class="bi bi-truck"></i> Operations
-                        </a>
-                        <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="{% url 'products:daily_seller_stock' %}">Stock Journalier</a></li>
-                            <li><a class="dropdown-item" href="{% url 'products:load_new_inventory' %}">Chargement (Matin)</a></li>
-                            <li><a class="dropdown-item" href="{% url 'products:unload_new_inventory' %}">Déchargement (Soir)</a></li>
-                        </ul>
-                    </li>
-
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
-                            <i class="bi bi-people"></i> Clients
-                        </a>
-                        <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="{% url 'products:customer_list' %}">Liste Clients</a></li>
-                            <li><a class="dropdown-item" href="{% url 'products:customer_create' %}">Ajouter Client</a></li>
-                        </ul>
-                    </li>
-
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
-                            <i class="bi bi-wallet2"></i> Paiements
-                        </a>
-                        <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="{% url 'products:seller_payment_entry' %}">Saisie Paiement</a></li>
-                            <li><a class="dropdown-item" href="{% url 'products:seller_payment_history' %}">Historique</a></li>
-                            <li><a class="dropdown-item" href="{% url 'products:unpaid_balances_report' %}">Soldes Impayés</a></li>
-                        </ul>
-                    </li>
-
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
-                            <i class="bi bi-file-earmark-bar-graph"></i> Rapports
-                        </a>
-                        <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="{% url 'products:export_inventory_to_pdf' %}">Export Stock (PDF)</a></li>
-                            <li><a class="dropdown-item" href="{% url 'products:metrics_dashboard' %}">KPI Metrics</a></li>
-                        </ul>
-                    </li>
-
+          <a class="navbar-brand fw-bold" href="{% url 'products:manager_landing' %}">
+            <i class="bi bi-shop"></i> Maakoulatcom
+          </a>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+          </button>
+      
+          <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav me-auto">
+      
+              <!-- Produits -->
+              <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                  <i class="bi bi-grid"></i> Produits
+                </a>
+                <ul class="dropdown-menu">
+                  <li><a class="dropdown-item" href="{% url 'products:product_list' %}">Liste des Produits</a></li>
+                  <li><a class="dropdown-item" href="{% url 'products:product_form' %}">Ajouter Produit</a></li>
+                  <li><a class="dropdown-item" href="{% url 'products:import_products' %}">Importer</a></li>
                 </ul>
-                <ul class="navbar-nav">
-                    {% if user.is_authenticated %}
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'logout' %}">
-                            <i class="bi bi-box-arrow-right"></i> Déconnexion
-                        </a>
-                    </li>
-                    {% else %}
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'login' %}">
-                            <i class="bi bi-box-arrow-in-right"></i> Connexion
-                        </a>
-                    </li>
-                    {% endif %}
+              </li>
+      
+              <!-- Inventaire -->
+              <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                  <i class="bi bi-boxes"></i> Inventaire
+                </a>
+                <ul class="dropdown-menu">
+                  <li><a class="dropdown-item" href="{% url 'products:inventory_status' %}">État de Stock</a></li>
+                  <li><a class="dropdown-item" href="{% url 'products:inventory_entry' %}">Entrée</a></li>
+                  <li><a class="dropdown-item" href="{% url 'products:inventory_entries' %}">Gérer les Entrées</a></li>
+                  <li><a class="dropdown-item" href="{% url 'products:bulk_operations' %}">Opérations en Masse</a></li>
                 </ul>
-            </div>
+              </li>
+      
+              <!-- Ventes & Commandes -->
+              <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                  <i class="bi bi-cash-coin"></i> Ventes
+                </a>
+                <ul class="dropdown-menu">
+                  <li><a class="dropdown-item" href="{% url 'products:sales_entry' %}">Nouvelle Vente</a></li>
+                  <li><a class="dropdown-item" href="{% url 'products:sales_entries' %}">Gérer les Ventes</a></li>
+                  <li><a class="dropdown-item" href="{% url 'products:daily_sales_summary' %}">Résumé Journalier</a></li>
+                  <li><hr class="dropdown-divider"></li>
+                  <li><a class="dropdown-item" href="{% url 'products:invoice_list' %}">Factures</a></li>
+                  <li><a class="dropdown-item" href="{% url 'products:order_list' %}">Commandes Clients</a></li>
+                </ul>
+              </li>
+      
+              <!-- Livraisons (Chgt / Déchgt) -->
+              <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                  <i class="bi bi-truck"></i> Operations
+                </a>
+                <ul class="dropdown-menu">
+                  <li><a class="dropdown-item" href="{% url 'products:daily_seller_stock' %}">Stock Journalier</a></li>
+                  <li><a class="dropdown-item" href="{% url 'products:load_new_inventory' %}">Chargement (Matin)</a></li>
+                  <li><a class="dropdown-item" href="{% url 'products:unload_new_inventory' %}">Déchargement (Soir)</a></li>
+                  <li><a class="dropdown-item" href="{% url 'products:validate_inventory_requests' %}">Valider Demandes</a></li>
+                </ul>
+              </li>
+      
+              <!-- Clients -->
+              <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                  <i class="bi bi-people"></i> Clients
+                </a>
+                <ul class="dropdown-menu">
+                  <li><a class="dropdown-item" href="{% url 'products:customer_list' %}">Liste</a></li>
+                  <li><a class="dropdown-item" href="{% url 'products:customer_create' %}">Ajouter Client</a></li>
+                </ul>
+              </li>
+      
+              <!-- Paiements -->
+              <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                  <i class="bi bi-wallet2"></i> Paiements
+                </a>
+                <ul class="dropdown-menu">
+                  <li><a class="dropdown-item" href="{% url 'products:seller_payment_entry' %}">Saisie Paiement</a></li>
+                  <li><a class="dropdown-item" href="{% url 'products:seller_payment_history' %}">Historique</a></li>
+                  <li><a class="dropdown-item" href="{% url 'products:unpaid_balances_report' %}">Soldes Impayés</a></li>
+                </ul>
+              </li>
+      
+              <!-- Comptabilité -->
+              <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                  <i class="bi bi-clipboard-data"></i> Comptabilité
+                </a>
+                <ul class="dropdown-menu">
+                  <li><a class="dropdown-item" href="{% url 'products:expense_list' %}">Dépenses</a></li>
+                  <li><a class="dropdown-item" href="{% url 'products:revenue_list' %}">Recettes</a></li>
+                </ul>
+              </li>
+      
+              <!-- Rapports -->
+              <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                  <i class="bi bi-bar-chart-line"></i> Rapports
+                </a>
+                <ul class="dropdown-menu">
+                  <li><a class="dropdown-item" href="{% url 'products:metrics_dashboard' %}">Tableau de Bord</a></li>
+                  <li><a class="dropdown-item" href="{% url 'products:export_inventory_to_pdf' %}">Export Stock</a></li>
+                </ul>
+              </li>
+      
+            </ul>
+      
+            <ul class="navbar-nav">
+              {% if user.is_authenticated %}
+              <li class="nav-item">
+                <a class="nav-link" href="{% url 'logout' %}">
+                  <i class="bi bi-box-arrow-right"></i> Déconnexion
+                </a>
+              </li>
+              {% endif %}
+            </ul>
+          </div>
         </div>
-    </nav>
-
+      </nav>
+      
     <main class="container mt-5">
         {% block content %}
         {% endblock %}
