@@ -1,22 +1,19 @@
 {% extends 'mobile/base_mobile.html' %}
 {% block content %}
 <div class="container mt-4">
-  <h3 class="mb-4 text-center">Mon Inventaire</h3>
-  <table class="table table-bordered table-sm">
-    <thead class="table-light">
-      <tr>
-        <th>Produit</th>
-        <th>Quantité</th>
-      </tr>
-    </thead>
-    <tbody>
+  <h3 class="mb-2 text-center">Chargement du {{ date|date:"d/m/Y" }}</h3>
+
+  {% if inventory %}
+    <ul class="list-group">
       {% for item in inventory %}
-      <tr>
-        <td>{{ item.product.name }}</td>
-        <td>{{ item.quantity }}</td>
-      </tr>
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          <strong>{{ item.product.name }}</strong>
+          <span class="badge bg-primary rounded-pill">{{ item.quantity }}</span>
+        </li>
       {% endfor %}
-    </tbody>
-  </table>
+    </ul>
+  {% else %}
+    <p class="text-muted text-center">Aucun produit chargé aujourd'hui.</p>
+  {% endif %}
 </div>
 {% endblock %}

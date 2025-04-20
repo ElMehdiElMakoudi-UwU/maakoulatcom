@@ -30,7 +30,7 @@ from .models import (
     Product, InventoryEntry, SalesEntry, Order, Invoice, InvoiceItem,
     Seller, SellerInventory, LoadingRecord, UnloadingRecord,
     SellerProductDayEntry, DailySellerStockRecord, SellerPayment,
-    Customer, CustomerOrder, CustomerOrderItem, SalesRecord, Expense, Revenue
+    Customer, CustomerOrder, CustomerOrderItem, SalesRecord, Expense, Revenue, InventoryLoadRequest
 )
 
 from .forms import (
@@ -1278,25 +1278,25 @@ def mobile_load_inventory(request):
     seller = get_object_or_404(Seller, user=request.user)
     products = Product.objects.all()
 
+    selected_date_str = request.GET.get('date') or request.POST.get('date')
+    selected_date = datetime.strptime(selected_date_str, '%Y-%m-%d').date() if selected_date_str else now().date()
+
     if request.method == "POST":
         for product in products:
             qty = int(request.POST.get(f"quantity_{product.id}", 0))
-            SellerInventory.objects.update_or_create(
-                seller=seller,
-                product=product,
-                defaults={"quantity": qty}
-            )
-        messages.success(request, "Inventaire initial chargé.")
+            if qty > 0:
+                InventoryLoadRequest.objects.create(
+                    seller=seller,
+                    product=product,
+                    quantity=qty,
+                    date=selected_date
+                )
+        messages.success(request, "Demande de chargement envoyée pour validation.")
         return redirect("products:mobile_inventory_status")
-
-    current_stock = {
-        inv.product.id: inv.quantity
-        for inv in SellerInventory.objects.filter(seller=seller)
-    }
 
     return render(request, "mobile/load_inventory.html", {
         "products": products,
-        "current_stock": current_stock,
+        "selected_date": selected_date.strftime('%Y-%m-%d')
     })
 
 @login_required
@@ -1320,11 +1320,62 @@ def mobile_unload_inventory(request):
     })
 
 @login_required
+def validate_inventory_requests(request):
+    if not request.user.seller.role == 'manager':
+        return redirect('products:metrics_dashboard')  # restrict access
+
+    selected_date_str = request.GET.get("date")
+    selected_date = datetime.strptime(selected_date_str, "%Y-%m-%d").date() if selected_date_str else now().date()
+
+    requests = InventoryLoadRequest.objects.filter(date=selected_date, validated=False).select_related('seller', 'product')
+
+    if request.method == "POST":
+        for req in requests:
+            if f"approve_{req.id}" in request.POST:
+                # Validate and update seller inventory
+                inventory, created = SellerInventory.objects.get_or_create(
+                    seller=req.seller, product=req.product,
+                    defaults={'quantity': 0}
+                )
+                inventory.quantity += req.quantity
+                inventory.save()
+
+                req.validated = True
+                req.save()
+
+        messages.success(request, "Demandes validées avec succès.")
+        return redirect(request.path + f"?date={selected_date.strftime('%Y-%m-%d')}")
+
+    return render(request, "manager/validate_inventory_requests.html", {
+        "requests": requests,
+        "selected_date": selected_date.strftime('%Y-%m-%d')
+    })
+
+
+@login_required
 def mobile_inventory_status(request):
     seller = get_object_or_404(Seller, user=request.user)
-    inventory_data = SellerInventory.objects.filter(seller=seller).select_related("product")
+    today = now().date()
+
+    # Chargement du jour
+    entries = SellerProductDayEntry.objects.filter(
+        seller=seller,
+        date=today
+    ).select_related("product")
+
+    # Filtrer les produits effectivement chargés
+    loaded_entries = [
+        {
+            "product": entry.product,
+            "quantity": entry.voiture + entry.sortie
+        }
+        for entry in entries
+        if (entry.voiture + entry.sortie) > 0
+    ]
+
     return render(request, "mobile/inventory_status.html", {
-        "inventory": inventory_data
+        "inventory": loaded_entries,
+        "date": today
     })
 
 @login_required

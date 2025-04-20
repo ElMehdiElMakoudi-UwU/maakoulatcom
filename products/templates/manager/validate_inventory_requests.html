@@ -1,0 +1,41 @@
+{% extends 'products/base.html' %}
+{% block content %}
+<div class="container mt-4">
+  <h3 class="mb-3">Validation des Demandes de Chargement</h3>
+
+  <form method="get" class="mb-3">
+    <label for="date">Date :</label>
+    <input type="date" name="date" id="date" class="form-control" value="{{ selected_date }}">
+    <button type="submit" class="btn btn-secondary mt-2">Filtrer</button>
+  </form>
+
+  {% if requests %}
+  <form method="post">
+    {% csrf_token %}
+    <table class="table table-bordered">
+      <thead class="table-light">
+        <tr>
+          <th>Vendeur</th>
+          <th>Produit</th>
+          <th>Quantité</th>
+          <th>Valider</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in requests %}
+        <tr>
+          <td>{{ r.seller.name }}</td>
+          <td>{{ r.product.name }}</td>
+          <td>{{ r.quantity }}</td>
+          <td><input type="checkbox" name="approve_{{ r.id }}"></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <button class="btn btn-success">Valider les Sélections</button>
+  </form>
+  {% else %}
+    <p>Aucune demande à valider pour cette date.</p>
+  {% endif %}
+</div>
+{% endblock %}

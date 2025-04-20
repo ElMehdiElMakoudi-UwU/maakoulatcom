@@ -334,3 +334,14 @@ class Revenue(models.Model):
 
     def __str__(self):
         return f"{self.date} - {self.amount} DH ({self.category})"
+
+class InventoryLoadRequest(models.Model):
+    seller = models.ForeignKey(Seller, on_delete=models.CASCADE)
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    quantity = models.PositiveIntegerField()
+    date = models.DateField()
+    validated = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.seller.name} - {self.product.name} - {self.quantity} (Validé: {self.validated})"

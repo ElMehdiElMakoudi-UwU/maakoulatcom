@@ -75,6 +75,8 @@ urlpatterns = [
     path('accounts/profile/', views.post_login_redirect, name='post_login_redirect'),
     # urls.py
     path('manager/', views.manager_landing, name='manager_landing'),
+    path('manager/inventory/validate/', views.validate_inventory_requests, name='validate_inventory_requests'),
+
     # comptabilite
     path('expenses/', views.expense_list, name='expense_list'),
     path('expenses/add/', views.expense_entry, name='expense_entry'),

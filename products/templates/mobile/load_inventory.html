@@ -1,17 +1,23 @@
-<!-- Template for load_inventory.html -->
 {% extends 'mobile/base_mobile.html' %}
 {% block content %}
 <div class="container mt-4">
-  <h3 class="mb-3 text-center">Charger Inventaire</h3>
-  <form method="post">{% csrf_token %}
+  <h3 class="mb-3 text-center">Demande de Chargement</h3>
+
+  <form method="post">
+    {% csrf_token %}
+    <div class="mb-3">
+      <label for="date">Date du chargement :</label>
+      <input type="date" name="date" id="date" class="form-control" value="{{ selected_date }}" required>
+    </div>
+
     {% for product in products %}
     <div class="mb-3">
       <label class="form-label">{{ product.name }}</label>
-      <input type="number" name="q_{{ product.id }}" class="form-control" min="0" value="0">
+      <input type="number" name="quantity_{{ product.id }}" class="form-control" min="0" value="0">
     </div>
     {% endfor %}
-    <button type="submit" class="btn btn-primary w-100">Charger</button>
+
+    <button type="submit" class="btn btn-primary w-100">Envoyer pour validation</button>
   </form>
 </div>
 {% endblock %}
-
