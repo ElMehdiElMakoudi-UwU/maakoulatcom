@@ -335,6 +335,19 @@ class Revenue(models.Model):
     def __str__(self):
         return f"{self.date} - {self.amount} DH ({self.category})"
 
+class CashFlowEntry(models.Model):
+    TYPE_CHOICES = [
+        ('in', 'Entrée'),
+        ('out', 'Sortie'),
+    ]
+    date = models.DateField()
+    type = models.CharField(max_length=4, choices=TYPE_CHOICES)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    description = models.TextField(blank=True)
+
+    def __str__(self):
+        return f"{self.date} - {self.get_type_display()} - {self.amount} DH"
+
 class InventoryLoadRequest(models.Model):
     seller = models.ForeignKey(Seller, on_delete=models.CASCADE)
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
@@ -345,3 +358,31 @@ class InventoryLoadRequest(models.Model):
 
     def __str__(self):
         return f"{self.seller.name} - {self.product.name} - {self.quantity} (Validé: {self.validated})"
+
+class DuePayment(models.Model):
+    PAYMENT_METHODS = [
+        ("cheque", "Chèque"),
+        ("virement", "Virement"),
+        ("espece", "Espèces"),
+        ("autre", "Autre"),
+    ]
+
+    supplier = models.CharField(max_length=255)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    due_date = models.DateField()
+    method = models.CharField(max_length=20, choices=PAYMENT_METHODS)
+    status = models.CharField(max_length=20, choices=[
+        ("pending", "À venir"),
+        ("paid", "Réglé")
+    ], default="pending")
+    description = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def is_overdue(self):
+        return self.due_date < now().date() and self.status != "paid"
+
+    def is_soon_due(self):
+        return 0 <= (self.due_date - now().date()).days <= 3  # Next 3 days
+
+    def __str__(self):
+        return f"{self.supplier} - {self.amount} DH - {self.due_date}"

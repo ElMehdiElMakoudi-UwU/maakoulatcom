@@ -1,0 +1,74 @@
+{% extends 'products/base.html' %}
+{% load static %}
+{% block content %}
+<div class="container mt-4">
+
+  <h3 class="mb-4">Tableau de Bord Trésorerie</h3>
+
+    <!-- Chart -->
+    {% if chart_image %}
+    <div class="text-center mb-4">
+      <img src="data:image/png;base64,{{ chart_image }}" class="img-fluid" alt="Graphique de Trésorerie">
+    </div>
+    {% endif %}
+
+  <!-- Filters -->
+  <form method="get" class="row g-2 mb-4">
+    <div class="col-md-3">
+      <label>Date début</label>
+      <input type="date" name="start_date" class="form-control" value="{{ start_date }}">
+    </div>
+    <div class="col-md-3">
+      <label>Date fin</label>
+      <input type="date" name="end_date" class="form-control" value="{{ end_date }}">
+    </div>
+    <div class="col-md-3">
+      <label>Type</label>
+      <select name="type" class="form-select">
+        <option value="">Tous</option>
+        <option value="entry" {% if type_filter == 'entry' %}selected{% endif %}>Entrée</option>
+        <option value="exit" {% if type_filter == 'exit' %}selected{% endif %}>Sortie</option>
+      </select>
+    </div>
+    <div class="col-md-3 d-flex align-items-end">
+      <button type="submit" class="btn btn-primary w-100">Filtrer</button>
+    </div>
+  </form>
+
+
+
+  <!-- Table -->
+  <div class="card">
+    <div class="card-header fw-bold">Historique des Mouvements</div>
+    <div class="card-body p-0">
+      <table class="table table-bordered mb-0">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Type</th>
+            <th>Montant (DH)</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for cash in cashflows %}
+          <tr>
+            <td>{{ cash.date|date:"d/m/Y" }}</td>
+            <td>{{ cash.get_type_display }}</td>
+            <td class="{% if cash.type == 'entry' %}text-success{% else %}text-danger{% endif %}">
+              {{ cash.amount|floatformat:2 }}
+            </td>
+            <td>{{ cash.description }}</td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="4" class="text-center">Aucune opération trouvée.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

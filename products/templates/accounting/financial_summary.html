@@ -1,0 +1,99 @@
+{% extends 'products/base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+  <h2 class="text-center mb-4">Bilan Financier</h2>
+
+  <form method="get" class="row g-3 mb-4">
+    <div class="col-md-4">
+      <label class="form-label">Date de début</label>
+      <input type="date" name="start_date" class="form-control" value="{{ start_date }}">
+    </div>
+    <div class="col-md-4">
+      <label class="form-label">Date de fin</label>
+      <input type="date" name="end_date" class="form-control" value="{{ end_date }}">
+    </div>
+    <div class="col-md-4 align-self-end">
+      <button type="submit" class="btn btn-primary w-100">Filtrer</button>
+    </div>
+  </form>
+
+  <div class="row mb-4 text-center">
+    <div class="col-md-4">
+      <div class="card border-success">
+        <div class="card-body">
+          <h5 class="card-title">Total Recettes</h5>
+          <p class="card-text fs-4 text-success">{{ total_revenue|floatformat:2 }} DH</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card border-danger">
+        <div class="card-body">
+          <h5 class="card-title">Total Dépenses</h5>
+          <p class="card-text fs-4 text-danger">{{ total_expense|floatformat:2 }} DH</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card border-info">
+        <div class="card-body">
+          <h5 class="card-title">Solde Net</h5>
+          <p class="card-text fs-4">{{ net_balance|floatformat:2 }} DH</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="text-end mb-3">
+    <a href="{% url 'products:financial_summary_pdf' %}?start_date={{ start_date }}&end_date={{ end_date }}" class="btn btn-outline-dark me-2">📄 Export PDF</a>
+    <a href="{% url 'products:financial_summary_excel' %}?start_date={{ start_date }}&end_date={{ end_date }}" class="btn btn-outline-dark">📁 Export Excel</a>    
+  </div>
+
+  <h4 class="mb-2">Recettes</h4>
+  <table class="table table-bordered mb-4">
+    <thead class="table-light">
+      <tr>
+        <th>Date</th>
+        <th>Montant</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in revenues %}
+      <tr>
+        <td>{{ r.date|date:"d/m/Y" }}</td>
+        <td>{{ r.amount|floatformat:2 }}</td>
+        <td>{{ r.description|default:"-" }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="3" class="text-center">Aucune recette</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <h4 class="mb-2">Dépenses</h4>
+  <table class="table table-bordered">
+    <thead class="table-light">
+      <tr>
+        <th>Date</th>
+        <th>Montant</th>
+        <th>Catégorie</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for d in expenses %}
+      <tr>
+        <td>{{ d.date|date:"d/m/Y" }}</td>
+        <td>{{ d.amount|floatformat:2 }}</td>
+        <td>{{ d.category }}</td>
+        <td>{{ d.description|default:"-" }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="4" class="text-center">Aucune dépense</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

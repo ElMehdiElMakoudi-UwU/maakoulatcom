@@ -9,3 +9,10 @@ admin.site.register(Order)
 admin.site.register(Seller)
 admin.site.register(SellerInventory)
 admin.site.register(UnloadingRecord)
+from .models import CashFlowEntry
+
+@admin.register(CashFlowEntry)
+class CashFlowEntryAdmin(admin.ModelAdmin):
+    list_display = ('date', 'type', 'amount', 'description')
+    list_filter = ('type', 'date')
+    search_fields = ('description',)

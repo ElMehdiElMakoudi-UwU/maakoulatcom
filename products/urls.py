@@ -86,5 +86,20 @@ urlpatterns = [
     path('revenues/new/', views.revenue_create, name='revenue_create'),
     path('revenues/pdf/', views.revenue_list_pdf, name='revenue_list_pdf'),
     path("revenues/export/excel/", views.export_revenues_excel, name="export_revenues_excel"),
+    path('accounting/summary/', views.financial_summary, name='financial_summary'),
+    path('accounting/summary/pdf/', views.financial_summary_pdf, name='financial_summary_pdf'),
+    path('accounting/summary/excel/', views.financial_summary_excel, name='financial_summary_excel'),
+    path('cashflow/new/', views.cashflow_entry_view, name='cashflow_entry'),
+    path('cashflow/', views.cashflow_list, name='cashflow_list'),
+    path('cashflow/pdf/', views.cashflow_export_pdf, name='cashflow_export_pdf'),
+    path('cashflow/excel/', views.cashflow_export_excel, name='cashflow_export_excel'),
+    path("payments/due/", views.due_payments_list, name="due_payments_list"),
+    path("payments/due/add/", views.due_payment_create, name="due_payment_create"),
+    path('accounting/due-payments/<int:pk>/edit/', views.due_payment_edit, name='edit_due_payment'),
+
+
+
+
+
 
 ]

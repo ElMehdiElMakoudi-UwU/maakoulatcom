@@ -77,3 +77,31 @@ class RevenueForm(forms.ModelForm):
             'date': forms.DateInput(attrs={'type': 'date'}),
             'description': forms.Textarea(attrs={'rows': 2}),
         }
+
+from .models import CashFlowEntry
+from django import forms
+
+class CashFlowEntryForm(forms.ModelForm):
+    class Meta:
+        model = CashFlowEntry
+        fields = ['date', 'type', 'amount', 'description']
+        widgets = {
+            'date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'type': forms.Select(attrs={'class': 'form-select'}),
+            'amount': forms.NumberInput(attrs={'class': 'form-control'}),
+            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
+        }
+
+
+# forms.py
+from django import forms
+from .models import DuePayment
+
+class DuePaymentForm(forms.ModelForm):
+    class Meta:
+        model = DuePayment
+        fields = ['supplier', 'due_date', 'amount', 'method', 'status', 'description']
+        widgets = {
+            'due_date': forms.DateInput(attrs={'type': 'date'}),
+            'description': forms.Textarea(attrs={'rows': 2}),
+        }

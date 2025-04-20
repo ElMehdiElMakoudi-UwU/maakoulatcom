@@ -13,7 +13,7 @@ from django.template.loader import render_to_string, get_template
 from django.core.exceptions import ObjectDoesNotExist
 
 from decimal import Decimal
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from io import BytesIO
 import csv
 
@@ -30,12 +30,12 @@ from .models import (
     Product, InventoryEntry, SalesEntry, Order, Invoice, InvoiceItem,
     Seller, SellerInventory, LoadingRecord, UnloadingRecord,
     SellerProductDayEntry, DailySellerStockRecord, SellerPayment,
-    Customer, CustomerOrder, CustomerOrderItem, SalesRecord, Expense, Revenue, InventoryLoadRequest
+    Customer, CustomerOrder, CustomerOrderItem, SalesRecord, Expense, Revenue, InventoryLoadRequest,CashFlowEntry
 )
 
 from .forms import (
     ProductForm, InventoryEntryForm, SalesEntryForm,
-    InvoiceForm, InvoiceItemForm, ExpenseForm, RevenueForm
+    InvoiceForm, InvoiceItemForm, ExpenseForm, RevenueForm, CashFlowEntryForm, DuePaymentForm
 )
 
 from django.contrib.auth.decorators import login_required
@@ -1351,7 +1351,6 @@ def validate_inventory_requests(request):
         "selected_date": selected_date.strftime('%Y-%m-%d')
     })
 
-
 @login_required
 def mobile_inventory_status(request):
     seller = get_object_or_404(Seller, user=request.user)
@@ -1391,18 +1390,36 @@ def mobile_clients(request):
         "clients": clients
     })
 
+from django.db.models.functions import TruncDate
+from datetime import date
+
+from django.utils.timezone import localdate
+
+from django.db.models.functions import TruncDate
+from datetime import date
+
 @login_required
 def mobile_orders(request):
     seller = get_object_or_404(Seller, user=request.user)
     orders = CustomerOrder.objects.filter(seller=seller).select_related("customer")
-
     customer_id = request.GET.get("customer_id")
-    date = request.GET.get("date")
+    selected_date = request.GET.get("date")
 
     if customer_id:
         orders = orders.filter(customer_id=customer_id)
-    if date:
-        orders = orders.filter(date__date=date)
+
+    if selected_date:
+        orders = orders.filter(date__date=selected_date)
+    else:
+        # Default: only show today's orders (or recent active days)
+        orders = orders.filter(date__date=date.today())
+
+
+    # KPIs for today
+    today = localdate()
+    today_orders = CustomerOrder.objects.filter(seller=seller, date__date=today)
+    order_count_today = today_orders.count()
+    total_sales_today = today_orders.aggregate(total=Sum('total_amount'))['total'] or 0
 
     orders = orders.order_by("-date")
     customers = Customer.objects.filter(seller=seller)
@@ -1411,7 +1428,9 @@ def mobile_orders(request):
         "orders": orders,
         "customers": customers,
         "selected_customer": customer_id,
-        "selected_date": date,
+        "selected_date": selected_date,
+        "order_count_today": order_count_today,
+        "total_sales_today": total_sales_today,
     })
 
 @login_required
@@ -1783,3 +1802,298 @@ def export_revenues_excel(request):
     response['Content-Disposition'] = 'attachment; filename=revenus.xlsx'
     wb.save(response)
     return response
+
+@login_required
+def financial_summary(request):
+    start_date = request.GET.get("start_date")
+    end_date = request.GET.get("end_date")
+    
+    # fallback: default to this month
+    if not start_date or not end_date:
+        today = now().date()
+        start_date = date(today.year, today.month, 1)
+        end_date = today
+    
+    revenues = Revenue.objects.filter(date__range=[start_date, end_date])
+    expenses = Expense.objects.filter(date__range=[start_date, end_date])
+
+    total_revenue = revenues.aggregate(Sum("amount"))["amount__sum"] or 0
+    total_expense = expenses.aggregate(Sum("amount"))["amount__sum"] or 0
+    net_balance = total_revenue - total_expense
+
+    context = {
+        "revenues": revenues,
+        "expenses": expenses,
+        "total_revenue": total_revenue,
+        "total_expense": total_expense,
+        "net_balance": net_balance,
+        "start_date": start_date,
+        "end_date": end_date,
+    }
+    return render(request, "accounting/financial_summary.html", context)
+
+@login_required
+def financial_summary_pdf(request):
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+
+    expenses = Expense.objects.all()
+    revenues = Revenue.objects.all()
+
+    if start_date:
+        expenses = expenses.filter(date__gte=start_date)
+        revenues = revenues.filter(date__gte=start_date)
+
+    if end_date:
+        expenses = expenses.filter(date__lte=end_date)
+        revenues = revenues.filter(date__lte=end_date)
+
+    total_expense = sum(e.amount for e in expenses)
+    total_revenue = sum(r.amount for r in revenues)
+    net_balance = total_revenue - total_expense
+
+    html = render_to_string("accounting/financial_summary_pdf.html", {
+        "expenses": expenses,
+        "revenues": revenues,
+        "total_expense": total_expense,
+        "total_revenue": total_revenue,
+        "net_balance": net_balance,
+        "start_date": start_date,
+        "end_date": end_date,
+    })
+
+    response = HttpResponse(content_type="application/pdf")
+    response["Content-Disposition"] = "inline; filename=bilan_financier.pdf"
+    pisa.CreatePDF(BytesIO(html.encode("UTF-8")), dest=response)
+    return response
+
+@login_required
+def financial_summary_excel(request):
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+
+    expenses = Expense.objects.all()
+    revenues = Revenue.objects.all()
+
+    if start_date:
+        expenses = expenses.filter(date__gte=start_date)
+        revenues = revenues.filter(date__gte=start_date)
+
+    if end_date:
+        expenses = expenses.filter(date__lte=end_date)
+        revenues = revenues.filter(date__lte=end_date)
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Résumé Financier"
+
+    # Headers
+    ws.append(["Date de début", start_date or "—", "Date de fin", end_date or "—"])
+    ws.append([])
+    ws.append(["Recettes"])
+    ws.append(["Date", "Montant", "Description"])
+    for r in revenues:
+        ws.append([r.date.strftime("%d/%m/%Y"), float(r.amount), r.description or "-"])
+
+    ws.append([])
+    ws.append(["Dépenses"])
+    ws.append(["Date", "Montant", "Catégorie", "Description"])
+    for e in expenses:
+        ws.append([e.date.strftime("%d/%m/%Y"), float(e.amount), e.category, e.description or "-"])
+
+    # Response
+    response = HttpResponse(content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    response["Content-Disposition"] = 'attachment; filename="bilan_financier.xlsx"'
+    wb.save(response)
+    return response
+
+@login_required
+def cashflow_entry_view(request):
+    if request.method == 'POST':
+        form = CashFlowEntryForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Entrée de trésorerie enregistrée avec succès.")
+            return redirect('products:cashflow_entry')
+    else:
+        form = CashFlowEntryForm()
+    return render(request, 'accounting/cashflow_entry.html', {'form': form})
+
+import matplotlib.pyplot as plt
+from io import BytesIO
+import base64
+import pandas as pd
+
+@login_required
+def cashflow_list(request):
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+    type_filter = request.GET.get('type')
+
+    cashflows = CashFlowEntry.objects.all()
+
+    if start_date:
+        cashflows = cashflows.filter(date__gte=start_date)
+    if end_date:
+        cashflows = cashflows.filter(date__lte=end_date)
+    if type_filter:
+        cashflows = cashflows.filter(type=type_filter)
+
+    # Build chart data
+    data = []
+    balance = 0
+    for cf in cashflows.order_by("date"):
+        amount = cf.amount if cf.type == "in" else -cf.amount
+        balance += amount
+        data.append({
+            "date": cf.date.strftime("%Y-%m-%d"),
+            "balance": float(balance)
+        })
+
+    # Prepare plot data
+    dates = [item["date"] for item in data]
+    balances = [item["balance"] for item in data]
+
+    # Generate matplotlib figure
+    fig, ax = plt.subplots()
+    ax.plot(dates, balances, marker='o')
+    ax.set_title("Évolution du Solde de Trésorerie")
+    ax.set_xlabel("Date")
+    ax.set_ylabel("Solde (DH)")
+    ax.tick_params(axis='x', rotation=45)
+    fig.tight_layout()
+
+    # Convert plot to PNG image
+    buf = BytesIO()
+    fig.savefig(buf, format="png")
+    buf.seek(0)
+    image_png = buf.getvalue()
+    buf.close()
+
+    # Encode to base64 string
+    chart_image = base64.b64encode(image_png).decode("utf-8")
+
+    return render(request, "accounting/cashflow_dashboard.html", {
+        "cashflows": cashflows,
+        "start_date": start_date,
+        "end_date": end_date,
+        "type_filter": type_filter,
+        "chart_image": chart_image,
+    })
+
+@login_required
+def cashflow_export_pdf(request):
+    cashflows = CashFlowEntry.objects.all()
+    start_date = request.GET.get("start_date")
+    end_date = request.GET.get("end_date")
+    type_filter = request.GET.get("type")
+
+    if start_date:
+        cashflows = cashflows.filter(date__gte=start_date)
+    if end_date:
+        cashflows = cashflows.filter(date__lte=end_date)
+    if type_filter:
+        cashflows = cashflows.filter(type=type_filter)
+
+    html = render_to_string("accounting/cashflow_list_pdf.html", {
+        "cashflows": cashflows,
+        "start_date": start_date,
+        "end_date": end_date,
+        "type_filter": type_filter,
+    })
+    response = HttpResponse(content_type="application/pdf")
+    response["Content-Disposition"] = 'inline; filename="tresorerie.pdf"'
+    pisa.CreatePDF(BytesIO(html.encode("utf-8")), dest=response)
+    return response
+
+@login_required
+def cashflow_export_excel(request):
+    cashflows = CashFlowEntry.objects.all()
+    start_date = request.GET.get("start_date")
+    end_date = request.GET.get("end_date")
+    type_filter = request.GET.get("type")
+
+    if start_date:
+        cashflows = cashflows.filter(date__gte=start_date)
+    if end_date:
+        cashflows = cashflows.filter(date__lte=end_date)
+    if type_filter:
+        cashflows = cashflows.filter(type=type_filter)
+
+    df = pd.DataFrame(list(cashflows.values("date", "type", "category", "description", "amount")))
+    df["date"] = df["date"].apply(lambda d: d.strftime("%Y-%m-%d"))
+
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine="xlsxwriter") as writer:
+        df.to_excel(writer, index=False, sheet_name="Trésorerie")
+
+    response = HttpResponse(
+        output.getvalue(),
+        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
+    response["Content-Disposition"] = 'attachment; filename="tresorerie.xlsx"'
+    return response
+
+# views.py
+from django.shortcuts import render
+from .models import DuePayment
+from django.contrib.auth.decorators import login_required
+from datetime import date
+
+@login_required
+def due_payments_list(request):
+    status_filter = request.GET.get("status")
+    supplier_filter = request.GET.get("supplier")
+
+    payments = DuePayment.objects.all().order_by("due_date")
+
+    if status_filter:
+        payments = payments.filter(status=status_filter)
+
+    if supplier_filter:
+        payments = payments.filter(supplier__icontains=supplier_filter)
+
+    today = date.today()
+
+    for p in payments:
+        p.days_until_due = (p.due_date - today).days
+
+    return render(request, "accounting/due_payments_list.html", {
+        "payments": payments,
+        "today": today,
+        "status_filter": status_filter,
+        "supplier_filter": supplier_filter,
+    })
+
+@login_required
+def due_payment_create(request):
+    if request.method == 'POST':
+        form = DuePaymentForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Paiement ajouté avec succès.")
+            return redirect('products:due_payments_list')
+    else:
+        form = DuePaymentForm()
+
+    return render(request, 'accounting/due_payment_form.html', {
+        'form': form,
+        'title': "Ajouter un Paiement",
+    })
+
+@login_required
+def due_payment_edit(request, pk):
+    payment = get_object_or_404(DuePayment, pk=pk)
+    if request.method == 'POST':
+        form = DuePaymentForm(request.POST, instance=payment)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Paiement modifié avec succès.")
+            return redirect('products:due_payments_list')
+    else:
+        form = DuePaymentForm(instance=payment)
+
+    return render(request, 'accounting/due_payment_form.html', {
+        'form': form,
+        'title': "Modifier le Paiement",
+    })

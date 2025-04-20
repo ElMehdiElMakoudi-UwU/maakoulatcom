@@ -23,6 +23,23 @@
     </div>
   </form>
 
+    <!-- KPIs -->
+  <div class="row text-center mb-3">
+    <div class="col-6">
+      <div class="bg-light rounded p-2">
+        <div class="fw-bold fs-5">{{ order_count_today }}</div>
+        <div class="text-muted small">Commandes Aujourd'hui</div>
+      </div>
+    </div>
+    <div class="col-6">
+      <div class="bg-light rounded p-2">
+        <div class="fw-bold fs-5">{{ total_sales_today|floatformat:2 }} DH</div>
+        <div class="text-muted small">Ventes Aujourd'hui</div>
+      </div>
+    </div>
+  </div>
+
+
   <a href="{% url 'products:mobile_create_order' %}" class="btn btn-sm btn-outline-primary w-100 mb-3">+ Nouvelle Commande</a>
 
   <ul class="list-group">
