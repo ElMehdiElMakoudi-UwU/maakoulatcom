@@ -1355,25 +1355,14 @@ def validate_inventory_requests(request):
     if request.method == "POST":
         for req in requests:
             if f"approve_{req.id}" in request.POST:
-                # 1. Update seller inventory
                 inventory, _ = SellerInventory.objects.get_or_create(
-                    seller=req.seller, product=req.product,
-                    defaults={'quantity': 0}
+                    seller=req.seller,
+                    product=req.product,
+                    defaults={"quantity": 0}
                 )
                 inventory.quantity += req.quantity
                 inventory.save()
 
-                # 2. Update SellerProductDayEntry sortie
-                day_entry, _ = SellerProductDayEntry.objects.get_or_create(
-                    seller=req.seller,
-                    product=req.product,
-                    date=selected_date,
-                    defaults={"voiture": 0, "sortie": 0, "retour": 0}
-                )
-                day_entry.sortie += req.quantity
-                day_entry.save()  # this triggers auto stock deduction if vendu changes
-
-                # 3. Mark request as validated
                 req.validated = True
                 req.save()
 
