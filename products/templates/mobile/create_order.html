@@ -25,17 +25,22 @@
                 <tr>
                     <th>Produit</th>
                     <th>Prix Unitaire</th>
+                    <th>Qte Disponible</th>
                     <th>Quantité</th>
                     <th>Total</th>
                 </tr>
             </thead>
             <tbody>
-                {% for product in products %}
+                {% for item in products %}
                 <tr>
-                    <td>{{ product.name }}</td>
-                    <td>{{ product.selling_price }}</td>
+                    <td>{{ item.product.name }}</td>
+                    <td>{{ item.product.selling_price }}</td>
+                    <td>{{ item.available_qty }}</td>
                     <td>
-                        <input type="number" min="0" class="form-control quantity-input" name="quantity_{{ product.id }}" data-price="{{ product.selling_price }}">
+                        <input type="number" min="0" max="{{ item.available_qty }}"
+                               class="form-control quantity-input"
+                               name="quantity_{{ item.product.id }}"
+                               data-price="{{ item.product.selling_price }}">
                     </td>
                     <td class="line-total">0.00</td>
                 </tr>

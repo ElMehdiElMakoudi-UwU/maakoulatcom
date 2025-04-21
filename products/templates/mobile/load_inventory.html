@@ -19,5 +19,17 @@
 
     <button type="submit" class="btn btn-primary w-100">Envoyer pour validation</button>
   </form>
+
+  {% if existing_requests %}
+  <div class="alert alert-info">
+    <h6 class="mb-2">Demandes déjà envoyées :</h6>
+    <ul class="mb-0">
+      {% for req in existing_requests %}
+        <li>{{ req.product.name }} : {{ req.quantity }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
 </div>
 {% endblock %}

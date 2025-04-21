@@ -23,9 +23,6 @@ from openpyxl.styles import Font
 from openpyxl.utils import get_column_letter
 from openpyxl.styles import Alignment
 
-
-
-
 from .models import (
     Product, InventoryEntry, SalesEntry, Order, Invoice, InvoiceItem,
     Seller, SellerInventory, LoadingRecord, UnloadingRecord,
@@ -1273,6 +1270,10 @@ def export_load_pdf(request, seller_id, date):
     response = HttpResponse(content_type='application/pdf')
     response['Content-Disposition'] = f'filename="Chargement-{seller.name}-{date}.pdf"'
    
+from django.contrib import messages
+from django.utils.timezone import now
+from datetime import datetime
+
 @login_required
 def mobile_load_inventory(request):
     seller = get_object_or_404(Seller, user=request.user)
@@ -1282,21 +1283,41 @@ def mobile_load_inventory(request):
     selected_date = datetime.strptime(selected_date_str, '%Y-%m-%d').date() if selected_date_str else now().date()
 
     if request.method == "POST":
+        created_any = False
         for product in products:
             qty = int(request.POST.get(f"quantity_{product.id}", 0))
             if qty > 0:
-                InventoryLoadRequest.objects.create(
+                # Vérifie s'il y a déjà une demande en attente
+                exists = InventoryLoadRequest.objects.filter(
                     seller=seller,
                     product=product,
-                    quantity=qty,
-                    date=selected_date
-                )
-        messages.success(request, "Demande de chargement envoyée pour validation.")
+                    date=selected_date,
+                    validated=False
+                ).exists()
+                if not exists:
+                    InventoryLoadRequest.objects.create(
+                        seller=seller,
+                        product=product,
+                        quantity=qty,
+                        date=selected_date
+                    )
+                    created_any = True
+
+        if created_any:
+            messages.success(request, "Demande envoyée pour validation.")
+        else:
+            messages.info(request, "Aucune nouvelle demande envoyée.")
         return redirect("products:mobile_inventory_status")
+
+    # Pour affichage (optionnel)
+    existing_requests = InventoryLoadRequest.objects.filter(
+        seller=seller, date=selected_date, validated=False
+    ).select_related('product')
 
     return render(request, "mobile/load_inventory.html", {
         "products": products,
-        "selected_date": selected_date.strftime('%Y-%m-%d')
+        "selected_date": selected_date.strftime('%Y-%m-%d'),
+        "existing_requests": existing_requests,
     })
 
 @login_required
@@ -1319,10 +1340,12 @@ def mobile_unload_inventory(request):
         "inventory": inventory_data
     })
 
+from .models import SellerProductDayEntry  # assure-toi que c'est bien importé
+
 @login_required
 def validate_inventory_requests(request):
     if not request.user.seller.role == 'manager':
-        return redirect('products:metrics_dashboard')  # restrict access
+        return redirect('products:metrics_dashboard')
 
     selected_date_str = request.GET.get("date")
     selected_date = datetime.strptime(selected_date_str, "%Y-%m-%d").date() if selected_date_str else now().date()
@@ -1332,14 +1355,25 @@ def validate_inventory_requests(request):
     if request.method == "POST":
         for req in requests:
             if f"approve_{req.id}" in request.POST:
-                # Validate and update seller inventory
-                inventory, created = SellerInventory.objects.get_or_create(
+                # 1. Update seller inventory
+                inventory, _ = SellerInventory.objects.get_or_create(
                     seller=req.seller, product=req.product,
                     defaults={'quantity': 0}
                 )
                 inventory.quantity += req.quantity
                 inventory.save()
 
+                # 2. Update SellerProductDayEntry sortie
+                day_entry, _ = SellerProductDayEntry.objects.get_or_create(
+                    seller=req.seller,
+                    product=req.product,
+                    date=selected_date,
+                    defaults={"voiture": 0, "sortie": 0, "retour": 0}
+                )
+                day_entry.sortie += req.quantity
+                day_entry.save()  # this triggers auto stock deduction if vendu changes
+
+                # 3. Mark request as validated
                 req.validated = True
                 req.save()
 
@@ -1354,27 +1388,17 @@ def validate_inventory_requests(request):
 @login_required
 def mobile_inventory_status(request):
     seller = get_object_or_404(Seller, user=request.user)
-    today = now().date()
 
-    # Chargement du jour
-    entries = SellerProductDayEntry.objects.filter(
-        seller=seller,
-        date=today
-    ).select_related("product")
-
-    # Filtrer les produits effectivement chargés
-    loaded_entries = [
-        {
-            "product": entry.product,
-            "quantity": entry.voiture + entry.sortie
-        }
-        for entry in entries
-        if (entry.voiture + entry.sortie) > 0
-    ]
+    inventory = (
+        SellerInventory.objects
+        .filter(seller=seller)
+        .select_related("product")
+        .order_by("product__name")
+    )
 
     return render(request, "mobile/inventory_status.html", {
-        "inventory": loaded_entries,
-        "date": today
+        "inventory": inventory,
+        "date": now().date()
     })
 
 @login_required
@@ -1389,14 +1413,6 @@ def mobile_clients(request):
     return render(request, "mobile/mobile_clients.html", {
         "clients": clients
     })
-
-from django.db.models.functions import TruncDate
-from datetime import date
-
-from django.utils.timezone import localdate
-
-from django.db.models.functions import TruncDate
-from datetime import date
 
 @login_required
 def mobile_orders(request):
@@ -1448,14 +1464,26 @@ def mobile_cash(request):
         "total_balance": total_balance
     })
 
+from decimal import Decimal
+from django.contrib import messages
+from django.shortcuts import get_object_or_404, redirect, render
+from .models import CustomerOrder, CustomerOrderItem, SellerInventory
+
 @login_required
 def mobile_create_order(request):
     seller = request.user.seller
     customers = Customer.objects.filter(seller=seller)
-    products = Product.objects.all()
-
-    # Capture selected customer from GET query
     selected_customer_id = request.GET.get("customer_id")
+
+    # Filtrer uniquement les produits avec stock > 0
+    inventory_qs = SellerInventory.objects.filter(seller=seller, quantity__gt=0).select_related("product")
+    products = [
+        {
+            "product": inv.product,
+            "available_qty": inv.quantity
+        }
+        for inv in inventory_qs
+    ]
 
     if request.method == 'POST':
         customer_id = request.POST.get('customer_id')
@@ -1469,11 +1497,13 @@ def mobile_create_order(request):
 
         total = Decimal('0.00')
 
-        for product in products:
+        for p in products:
+            product = p["product"]
+            available_qty = p["available_qty"]
             qty_str = request.POST.get(f'quantity_{product.id}')
             if qty_str:
                 qty = int(qty_str)
-                if qty > 0:
+                if 0 < qty <= available_qty:
                     item = CustomerOrderItem.objects.create(
                         order=order,
                         product=product,
@@ -1483,9 +1513,14 @@ def mobile_create_order(request):
                     )
                     total += item.total_price
 
+                    inventory = SellerInventory.objects.get(seller=seller, product=product)
+                    inventory.quantity -= qty
+                    inventory.save()
+
         order.total_amount = total
         order.save()
 
+        messages.success(request, "Commande enregistrée et stock mis à jour.")
         return redirect('products:mobile_order_detail', order_id=order.id)
 
     return render(request, 'mobile/create_order.html', {
