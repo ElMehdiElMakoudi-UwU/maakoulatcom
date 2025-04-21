@@ -113,7 +113,6 @@ def product_delete(request, product_id):
         return redirect('products:product_list')
     return render(request, 'products/product_confirm_delete.html', {'product': product})
 
-
 @login_required
 def inventory_entry(request):
     if request.method == 'POST':
@@ -1222,6 +1221,8 @@ def order_receipt(request, order_id):
     order = get_object_or_404(CustomerOrder, id=order_id, seller=request.user.seller)
     return render(request, 'pdf/order_receipt_mini.html', {'order': order})
 
+from django.utils.timezone import now
+
 @login_required
 def customer_order_list(request):
     sellers = Seller.objects.all()
@@ -1233,12 +1234,18 @@ def customer_order_list(request):
 
     orders = CustomerOrder.objects.all().select_related('customer', 'seller')
 
+    if not date:
+        today = now().date()
+        orders = orders.filter(date__date=today)
+        selected_date = today.strftime("%Y-%m-%d")
+    else:
+        orders = orders.filter(date__date=date)
+        selected_date = date
+
     if seller_id:
         orders = orders.filter(seller_id=seller_id)
     if customer_id:
         orders = orders.filter(customer_id=customer_id)
-    if date:
-        orders = orders.filter(date=date)
 
     return render(request, 'sales/customer_order_list.html', {
         'orders': orders,
@@ -1246,7 +1253,7 @@ def customer_order_list(request):
         'customers': customers,
         'selected_seller': int(seller_id) if seller_id else None,
         'selected_customer': int(customer_id) if customer_id else None,
-        'selected_date': date,
+        'selected_date': selected_date,
     })
 
 @login_required
