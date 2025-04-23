@@ -2083,7 +2083,10 @@ from .models import DuePayment
 from django.contrib.auth.decorators import login_required
 from datetime import date
 
-@login_required
+from django.shortcuts import render
+from datetime import date
+from .models import DuePayment
+
 def due_payments_list(request):
     status_filter = request.GET.get("status")
     supplier_filter = request.GET.get("supplier")
@@ -2098,6 +2101,7 @@ def due_payments_list(request):
 
     today = date.today()
 
+    # Days until due for highlighting
     for p in payments:
         p.days_until_due = (p.due_date - today).days
 
@@ -2107,6 +2111,7 @@ def due_payments_list(request):
         "status_filter": status_filter,
         "supplier_filter": supplier_filter,
     })
+
 
 @login_required
 def due_payment_create(request):

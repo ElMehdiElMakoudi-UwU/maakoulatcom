@@ -1,8 +1,12 @@
 {% extends 'products/base.html' %}
 {% block content %}
+<!-- FullCalendar CSS & JS CDN -->
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
+
 <div class="container mt-4">
   <h3 class="mb-3">Paiements à Échéance</h3>
-
+  
   <form method="get" class="row g-2 mb-3">
     <div class="col-md-3">
       <select name="status" class="form-select">
@@ -19,12 +23,12 @@
       <button type="submit" class="btn btn-dark w-100">Filtrer</button>
     </div>
   </form>
-
+  
   <a href="{% url 'products:due_payment_create' %}" class="btn btn-primary mb-3">+ Nouveau Paiement</a>
-
+  
   {% load tz %} {# Ensures time zone support #}
   {% now "Y-m-d" as today_str %}
-  {% with today_str|date:"Y-m-d"|date:"Y-m-d"|date:"Y-m-d" as today %}
+  {% with today_str|date:"Y-m-d" as today %}
   
   <table class="table table-bordered table-hover">
     <thead class="table-light">
@@ -40,7 +44,6 @@
     </thead>
     <tbody>
       {% for payment in payments %}
-        {% comment %} Calculate days_until_due in the view instead of template {% endcomment %}
         <tr
           {% if payment.due_date <= today and payment.status != 'paid' %}
             class="table-danger"
@@ -74,4 +77,48 @@
   
   {% endwith %}
 </div>
+
+<div class="container mt-4">
+  <h5 class="mb-3">📅 Calendrier des Échéances</h5>
+  <div id="calendar" class="border p-2 mb-4" style="height: 500px;"></div>
+</div>
+
+<!-- Hidden div with JSON data for the calendar -->
+<div id="calendar-data" style="display: none;" 
+     data-events='[
+       {% for payment in payments %}
+         {
+           "title": "{{ payment.supplier|escapejs }} - {{ payment.amount|floatformat:2 }} DH",
+           "start": "{{ payment.due_date|date:"Y-m-d" }}",
+           "color": "{% if payment.status == "paid" %}green{% elif payment.status == "overdue" %}red{% else %}orange{% endif %}"
+         }{% if not forloop.last %},{% endif %}
+       {% endfor %}
+     ]'>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const calendarEl = document.getElementById('calendar');
+    
+    // Get event data from the hidden div
+    const calendarDataEl = document.getElementById('calendar-data');
+    const eventsData = calendarDataEl.dataset.events;
+    
+    try {
+        const events = JSON.parse(eventsData);
+        
+        // Create calendar using the global namespace
+        const calendar = new FullCalendar.Calendar(calendarEl, {
+            initialView: 'dayGridMonth',
+            locale: 'fr',
+            events: events,
+            height: 500
+        });
+        
+        calendar.render();
+    } catch (e) {
+        console.error("Error initializing calendar:", e);
+    }
+});
+</script>
 {% endblock %}
