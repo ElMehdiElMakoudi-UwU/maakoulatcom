@@ -1257,6 +1257,18 @@ def customer_order_list(request):
     })
 
 @login_required
+def customer_order_delete(request, order_id):
+    order = get_object_or_404(CustomerOrder, id=order_id)
+
+    if request.method == "POST":
+        order.delete()
+        messages.success(request, "Commande supprimée avec succès.")
+        return redirect('products:order_list')
+
+    return render(request, "sales/confirm_delete.html", {"order": order})
+
+
+@login_required
 def export_load_pdf(request, seller_id, date):
     date_obj = datetime.strptime(date, '%Y-%m-%d').date()
     seller = get_object_or_404(Seller, id=seller_id)
@@ -1603,7 +1615,7 @@ def manager_landing(request):
     sales_by_seller = (
         monthly_entries.values('seller__name', 'date')
         .annotate(total=Sum('amount'))
-        .order_by('-date')
+        .order_by('-date')[:10]
     )
 
     context = {

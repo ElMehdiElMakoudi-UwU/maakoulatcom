@@ -54,13 +54,12 @@ urlpatterns = [
     # Order management
     path('orders/', views.customer_order_list, name='order_list'),
     path('orders/create/<int:customer_id>/', views.order_create, name='order_create'),
+    path('orders/<int:order_id>/delete/', views.customer_order_delete, name='order_delete'),
     path('orders/<int:order_id>/', views.order_detail, name='order_detail'),
     path('orders/<int:order_id>/pdf/', views.order_pdf, name='order_pdf'),
-    # urls.py
     path('orders/<int:order_id>/receipt/', views.order_receipt, name='order_receipt'),
     path('load-report/<int:seller_id>/<str:date>/', views.export_load_pdf, name='export_loading_pdf'),
     # Mobile pages : 
-    # urls.py
     path('mobile/', views.mobile_landing, name='mobile_landing'),
     path('mobile/inventory/load/', views.mobile_load_inventory, name='mobile_load_inventory'),
     path('mobile/inventory/unload/', views.mobile_unload_inventory, name='mobile_unload_inventory'),

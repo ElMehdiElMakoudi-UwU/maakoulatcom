@@ -116,8 +116,13 @@
                 <ul class="dropdown-menu">
                   <li><a class="dropdown-item" href="{% url 'products:expense_list' %}">Dépenses</a></li>
                   <li><a class="dropdown-item" href="{% url 'products:revenue_list' %}">Recettes</a></li>
+                  <li><hr class="dropdown-divider"></li>
+                  <li><a class="dropdown-item" href="{% url 'products:cashflow_list' %}">Cashflow</a></li>
+                  <li><a class="dropdown-item" href="{% url 'products:financial_summary' %}">Résumé Financier</a></li>
+                  <li><a class="dropdown-item" href="{% url 'products:due_payments_list' %}">Suivi Paiements Fournisseurs</a></li>
                 </ul>
               </li>
+
       
               <!-- Rapports -->
               <li class="nav-item dropdown">

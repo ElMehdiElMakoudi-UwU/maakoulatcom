@@ -53,6 +53,7 @@
             <td>
                 <a href="{% url 'products:order_detail' order.id %}" class="btn btn-sm btn-info">Détails</a>
                 <a href="{% url 'products:order_pdf' order.id %}" class="btn btn-sm btn-secondary">PDF</a>
+                <a href="{% url 'products:order_delete' order.id %}" class="btn btn-sm btn-danger" onclick="return confirm('Supprimer cette commande ?')">Supprimer</a>
             </td>
         </tr>
         {% endfor %}

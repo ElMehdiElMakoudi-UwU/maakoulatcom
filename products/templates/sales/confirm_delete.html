@@ -1,0 +1,13 @@
+{% extends 'products/base.html' %}
+{% block content %}
+<div class="container py-4">
+  <h3>Confirmer la Suppression</h3>
+  <p>Êtes-vous sûr de vouloir supprimer la commande du client <strong>{{ order.customer.name }}</strong> d’un montant de <strong>{{ order.total_amount }} DH</strong> ?</p>
+
+  <form method="post">
+    {% csrf_token %}
+    <a href="{% url 'products:order_list' %}" class="btn btn-secondary">Annuler</a>
+    <button type="submit" class="btn btn-danger">Supprimer</button>
+  </form>
+</div>
+{% endblock %}
