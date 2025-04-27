@@ -760,6 +760,8 @@ def load_new_inventory(request):
         'selected_date': selected_date.strftime('%Y-%m-%d'),
     })
 
+from django.db.models import F
+
 @login_required
 def unload_new_inventory(request):
     seller_id = request.GET.get("seller")
@@ -773,13 +775,11 @@ def unload_new_inventory(request):
     if seller_id:
         seller = get_object_or_404(Seller, id=seller_id)
 
-        # Fetch voiture = yesterday's retour
         yesterday = selected_date - timedelta(days=1)
         previous_unloads = SellerProductDayEntry.objects.filter(seller=seller, date=yesterday)
         for entry in previous_unloads:
             voiture_quantities[entry.product.id] = entry.retour
 
-        # Fetch sortie = today's sortie
         today_loads = SellerProductDayEntry.objects.filter(seller=seller, date=selected_date)
         for entry in today_loads:
             sortie_quantities[entry.product.id] = entry.sortie
@@ -788,15 +788,32 @@ def unload_new_inventory(request):
             for product in Product.objects.all():
                 retour_qty = int(request.POST.get(f"retour_{product.id}", 0))
 
-                entry, _ = SellerProductDayEntry.objects.get_or_create(
+                entry, created = SellerProductDayEntry.objects.get_or_create(
                     seller=seller, product=product, date=selected_date
                 )
+
+                # Calculate "before" vendu
+                previous_vendu = entry.voiture + entry.sortie - entry.retour
+
+                # Update the retour
                 entry.retour = retour_qty
+
+                # Recalculate vendu
+                entry.vendu = entry.voiture + entry.sortie - entry.retour
+
+                # Save the updated entry
+                entry.amount = entry.vendu * entry.product.selling_price
                 entry.save()
 
-            messages.success(request, "Déchargement enregistré avec succès.")
+                # Calculate the difference
+                sold_difference = entry.vendu - previous_vendu
 
-            # Redirect directly to PDF
+                # Deduct from global stock
+                if sold_difference > 0:
+                    Product.objects.filter(id=product.id).update(quantity=F('quantity') - sold_difference)
+
+            messages.success(request, "Déchargement enregistré et stock global mis à jour.")
+
             pdf_url = reverse('products:export_unload_pdf', args=[seller.id, selected_date])
             return redirect(pdf_url)
 
